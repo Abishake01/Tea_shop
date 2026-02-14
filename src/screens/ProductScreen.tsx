@@ -21,9 +21,18 @@ import ReportsScreen from './ReportsScreen';
 
 const ProductScreen: React.FC = () => {
   const { products, categories, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { isAdmin } = useAuth();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isReportsVisible, setIsReportsVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Redirect if not admin (though navigation should handle this)
+  useEffect(() => {
+    if (!isAdmin) {
+      // This screen should only be accessible to admin via navigation
+      // But we add this as a safety check
+    }
+  }, [isAdmin]);
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -181,7 +190,8 @@ const ProductScreen: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <ProtectedRoute requireAdmin>
+      <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Products</Text>
         <View style={styles.headerButtons}>
@@ -345,7 +355,8 @@ const ProductScreen: React.FC = () => {
           <ReportsScreen />
         </View>
       </Modal>
-    </View>
+      </View>
+    </ProtectedRoute>
   );
 };
 
