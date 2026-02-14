@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,14 @@ import {
   ScrollView,
 } from 'react-native';
 import { useProducts } from '../context/ProductContext';
+import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
 import { colors, spacing, typography } from '../theme';
 import { imageService } from '../services/imageService';
 import { validatePrice, validateTax, validateRequired, validateSKU } from '../utils/validators';
 import { formatCurrency } from '../utils/formatters';
 import ReportsScreen from './ReportsScreen';
+import ProtectedRoute from '../components/common/ProtectedRoute';
 
 const ProductScreen: React.FC = () => {
   const { products, categories, addProduct, updateProduct, deleteProduct } = useProducts();
