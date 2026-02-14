@@ -1,0 +1,130 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
+import { useProducts } from '../context/ProductContext';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { orderService } from '../services/orderService';
+import { colors, spacing } from '../theme';
+import ProductCard from '../components/common/ProductCard';
+import CategoryFilter from '../components/common/CategoryFilter';
+import CartPanel from '../components/common/CartPanel';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabParamList } from '../navigation/BottomTabNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'Home'>;
+
+const HomeScreen: React.FC = () => {
+  const { activeProducts, categories, getProductsByCategory } = useProducts();
+  const { addItem, items, clearCart } = useCart();
+  const { user } = useAuth();
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+
+  const filteredProducts = getProductsByCategory(selectedCategory);
+
+  const handleProductPress = (product: any) => {
+    addItem(product);
+  };
+
+  const handleCheckout = () => {
+    if (!user || items.length === 0) {
+      Alert.alert('Error', 'Cart is empty');
+      return;
+    }
+
+    Alert.alert(
+      'Checkout',
+      'Choose checkout type:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Regular Order',
+          onPress: () => {
+            orderService.createOrder(items, user.id);
+            clearCart();
+            navigation.navigate('Billing');
+          },
+        },
+        {
+          text: 'Token Order',
+          onPress: () => {
+            const tokenNumber = orderService.getNextTokenNumber();
+            orderService.createOrder(items, user.id, tokenNumber);
+            clearCart();
+            navigation.navigate('Token');
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <CategoryFilter
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+      <FlatList
+        data={filteredProducts}
+        renderItem={({ item }) => (
+          <ProductCard product={item} onPress={handleProductPress} />
+        )}
+        keyExtractor={item => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyContent}>
+              <Text style={styles.emptyText}>No products available</Text>
+              <Text style={styles.emptySubtext}>
+                {selectedCategory === 'all'
+                  ? 'Add products in the Product screen'
+                  : `No products in ${selectedCategory} category`}
+              </Text>
+            </View>
+          </View>
+        }
+      />
+      <CartPanel onCheckout={handleCheckout} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  row: {
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+  },
+  listContent: {
+    paddingVertical: spacing.md,
+    paddingBottom: 200, // Space for cart panel
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.xl * 2,
+  },
+  emptyContent: {
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+});
+
+export default HomeScreen;
