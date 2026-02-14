@@ -17,10 +17,12 @@ import { colors, spacing, typography } from '../theme';
 import { imageService } from '../services/imageService';
 import { validatePrice, validateTax, validateRequired, validateSKU } from '../utils/validators';
 import { formatCurrency } from '../utils/formatters';
+import ReportsScreen from './ReportsScreen';
 
 const ProductScreen: React.FC = () => {
   const { products, categories, addProduct, updateProduct, deleteProduct } = useProducts();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isReportsVisible, setIsReportsVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -182,9 +184,17 @@ const ProductScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Products</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddProduct}>
-          <Text style={styles.addButtonText}>+ Add Product</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={[styles.headerButton, styles.reportsButton]}
+            onPress={() => setIsReportsVisible(true)}
+          >
+            <Text style={styles.reportsButtonText}>Reports</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddProduct}>
+            <Text style={styles.addButtonText}>+ Add Product</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -317,6 +327,24 @@ const ProductScreen: React.FC = () => {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Reports Modal */}
+      <Modal
+        visible={isReportsVisible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setIsReportsVisible(false)}
+      >
+        <View style={styles.reportsModalContainer}>
+          <View style={styles.reportsModalHeader}>
+            <Text style={styles.reportsModalTitle}>Sales Reports</Text>
+            <TouchableOpacity onPress={() => setIsReportsVisible(false)}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          <ReportsScreen />
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -339,6 +367,20 @@ const styles = StyleSheet.create({
     ...typography.h1,
     color: colors.text,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  reportsButton: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+  },
+  reportsButtonText: {
+    ...typography.button,
+    color: colors.surface,
+  },
   addButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.md,
@@ -348,6 +390,28 @@ const styles = StyleSheet.create({
   addButtonText: {
     ...typography.button,
     color: colors.surface,
+  },
+  reportsModalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  reportsModalHeader: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reportsModalTitle: {
+    ...typography.h1,
+    color: colors.text,
+  },
+  closeButton: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
   },
   listContent: {
     padding: spacing.md,
