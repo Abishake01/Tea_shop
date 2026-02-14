@@ -4,16 +4,19 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ProductProvider } from './src/context/ProductContext';
 import { CartProvider } from './src/context/CartContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import ErrorBoundary from './src/components/common/ErrorBoundary';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ProductProvider>
-        <CartProvider>
-          <StatusBar style="auto" />
-          <AppNavigator />
-        </CartProvider>
-      </ProductProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ProductProvider>
+          <CartProvider>
+            <StatusBar style="auto" />
+            <AppNavigator />
+          </CartProvider>
+        </ProductProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
