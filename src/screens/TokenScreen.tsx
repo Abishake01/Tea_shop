@@ -15,6 +15,7 @@ import { orderService } from '../services/orderService';
 import { colors, spacing, typography } from '../theme';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import ReceiptView from '../components/common/ReceiptView';
+import { useFocusEffect } from '@react-navigation/native';
 
 const TokenScreen: React.FC = () => {
   const { user } = useAuth();
@@ -27,14 +28,20 @@ const TokenScreen: React.FC = () => {
 
   useEffect(() => {
     loadTokenOrders();
-    const counter = orderService.getNextTokenNumber();
-    setCurrentToken(counter);
+    setCurrentToken(orderService.peekNextTokenNumber());
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadTokenOrders();
+      setCurrentToken(orderService.peekNextTokenNumber());
+    }, [])
+  );
 
   const loadTokenOrders = () => {
     const allTokenOrders = orderService.getTokenOrders();
     // Sort by token number, highest first
-    const sorted = allTokenOrders.sort((a, b) => {
+    const sorted = [...allTokenOrders].sort((a, b) => {
       const tokenA = a.tokenNumber || 0;
       const tokenB = b.tokenNumber || 0;
       return tokenB - tokenA;
@@ -49,7 +56,7 @@ const TokenScreen: React.FC = () => {
     const newOrder = orderService.createOrder(items, user.id, tokenNumber);
     clearCart();
     loadTokenOrders();
-    setCurrentToken(tokenNumber);
+    setCurrentToken(orderService.peekNextTokenNumber());
     setSelectedOrder(newOrder);
     setIsReceiptVisible(true);
   };

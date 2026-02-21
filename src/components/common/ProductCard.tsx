@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Product } from '../../types';
 import { colors, spacing, typography } from '../../theme';
@@ -9,7 +9,7 @@ interface ProductCardProps {
   onPress: (product: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = memo(({ product, onPress }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) => {
   return (
     <TouchableOpacity
       style={styles.card}

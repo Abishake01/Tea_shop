@@ -85,6 +85,11 @@ export const orderService = {
     return nextToken;
   },
 
+  peekNextTokenNumber: (): number => {
+    const currentCounter = Storage.getNumber(StorageKeys.TOKEN_COUNTER) || 0;
+    return currentCounter + 1;
+  },
+
   getSalesReport: (startDate: number, endDate: number) => {
     const orders = orderService.getOrdersByDateRange(startDate, endDate);
     

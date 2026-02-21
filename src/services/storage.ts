@@ -1,78 +1,123 @@
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const storage = new MMKV({
-  id: 'tea-shop-storage',
-});
+const STORAGE_PREFIX = 'tea-shop-storage:';
+const cache = new Map<string, string>();
+let isInitialized = false;
+
+const scopedKey = (key: string): string => `${STORAGE_PREFIX}${key}`;
+
+const serialize = (value: unknown): string => JSON.stringify(value);
+
+const deserialize = <T>(value: string): T | null => {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+};
 
 export const Storage = {
+  initialize: async (): Promise<void> => {
+    if (isInitialized) return;
+
+    const keys = await AsyncStorage.getAllKeys();
+    const scopedKeys = keys.filter(key => key.startsWith(STORAGE_PREFIX));
+
+    if (scopedKeys.length > 0) {
+      const entries = await AsyncStorage.multiGet(scopedKeys);
+      entries.forEach(([fullKey, value]) => {
+        if (value !== null) {
+          const shortKey = fullKey.replace(STORAGE_PREFIX, '');
+          cache.set(shortKey, value);
+        }
+      });
+    }
+
+    isInitialized = true;
+  },
+
   // Generic get/set/delete methods
   getString: (key: string): string | undefined => {
-    return storage.getString(key);
+    return cache.get(key);
   },
 
   setString: (key: string, value: string): void => {
-    storage.set(key, value);
+    cache.set(key, value);
+    void AsyncStorage.setItem(scopedKey(key), value);
   },
 
   getNumber: (key: string): number | undefined => {
-    return storage.getNumber(key);
+    const raw = cache.get(key);
+    if (raw === undefined) return undefined;
+    const parsed = Number(raw);
+    return Number.isNaN(parsed) ? undefined : parsed;
   },
 
   setNumber: (key: string, value: number): void => {
-    storage.set(key, value);
+    const raw = String(value);
+    cache.set(key, raw);
+    void AsyncStorage.setItem(scopedKey(key), raw);
   },
 
   getBoolean: (key: string): boolean | undefined => {
-    return storage.getBoolean(key);
+    const raw = cache.get(key);
+    if (raw === undefined) return undefined;
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+    return undefined;
   },
 
   setBoolean: (key: string, value: boolean): void => {
-    storage.set(key, value);
+    const raw = String(value);
+    cache.set(key, raw);
+    void AsyncStorage.setItem(scopedKey(key), raw);
   },
 
   // Type-safe JSON helpers
   getObject: <T>(key: string): T | null => {
-    const value = storage.getString(key);
+    const value = cache.get(key);
     if (!value) return null;
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return null;
-    }
+    return deserialize<T>(value);
   },
 
   setObject: <T>(key: string, value: T): void => {
-    storage.set(key, JSON.stringify(value));
+    const raw = serialize(value);
+    cache.set(key, raw);
+    void AsyncStorage.setItem(scopedKey(key), raw);
   },
 
   // Array helpers
   getArray: <T>(key: string): T[] => {
-    const value = storage.getString(key);
+    const value = cache.get(key);
     if (!value) return [];
-    try {
-      return JSON.parse(value) as T[];
-    } catch {
-      return [];
-    }
+    const parsed = deserialize<T[]>(value);
+    return parsed || [];
   },
 
   setArray: <T>(key: string, value: T[]): void => {
-    storage.set(key, JSON.stringify(value));
+    const raw = serialize(value);
+    cache.set(key, raw);
+    void AsyncStorage.setItem(scopedKey(key), raw);
   },
 
   // Delete
   delete: (key: string): void => {
-    storage.delete(key);
+    cache.delete(key);
+    void AsyncStorage.removeItem(scopedKey(key));
   },
 
   // Clear all
   clearAll: (): void => {
-    storage.clearAll();
+    const keysToClear = Array.from(cache.keys());
+    cache.clear();
+    if (keysToClear.length > 0) {
+      void AsyncStorage.multiRemove(keysToClear.map(scopedKey));
+    }
   },
 
   // Check if key exists
   contains: (key: string): boolean => {
-    return storage.contains(key);
+    return cache.has(key);
   },
 };
 

@@ -15,6 +15,7 @@ import { orderService } from '../services/orderService';
 import { colors, spacing, typography } from '../theme';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import ReceiptView from '../components/common/ReceiptView';
+import { useFocusEffect } from '@react-navigation/native';
 
 const BillingScreen: React.FC = () => {
   const { user } = useAuth();
@@ -28,10 +29,16 @@ const BillingScreen: React.FC = () => {
     loadOrders();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      loadOrders();
+    }, [])
+  );
+
   const loadOrders = () => {
     const allOrders = orderService.getAllOrders();
     // Sort by timestamp, newest first
-    const sorted = allOrders.sort((a, b) => b.timestamp - a.timestamp);
+    const sorted = [...allOrders].sort((a, b) => b.timestamp - a.timestamp);
     setOrders(sorted);
   };
 

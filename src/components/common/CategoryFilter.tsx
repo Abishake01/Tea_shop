@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Category } from '../../types';
 import { colors, spacing, typography } from '../../theme';
@@ -9,7 +9,7 @@ interface CategoryFilterProps {
   onSelectCategory: (category: string) => void;
 }
 
-const CategoryFilter: React.FC<CategoryFilterProps> = memo(({
+const CategoryFilter: React.FC<CategoryFilterProps> = ({
   categories,
   selectedCategory,
   onSelectCategory,
