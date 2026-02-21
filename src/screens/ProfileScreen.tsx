@@ -13,8 +13,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
 import { settingsService } from '../services/settingsService';
-import { User, Settings } from '../types';
+import { User, Settings, SalesReport } from '../types';
 import { colors, spacing, typography } from '../theme';
+import { reportService } from '../services/reportService';
+import { formatCurrency, formatDate } from '../utils/formatters';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
@@ -23,6 +25,10 @@ const ProfileScreen: React.FC = () => {
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
   const [isUserManagementVisible, setIsUserManagementVisible] = useState(false);
   const [isAddStaffModalVisible, setIsAddStaffModalVisible] = useState(false);
+  const [isReportsVisible, setIsReportsVisible] = useState(false);
+  const [reportTab, setReportTab] = useState<'billing' | 'token'>('billing');
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
+  const [report, setReport] = useState<SalesReport | null>(null);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -40,6 +46,52 @@ const ProfileScreen: React.FC = () => {
       loadStaffUsers();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isReportsVisible) return;
+    loadReport();
+  }, [isReportsVisible, reportTab, selectedPeriod]);
+
+  const getReportRange = () => {
+    const now = Date.now();
+    let startDate: number;
+
+    switch (selectedPeriod) {
+      case 'today':
+        startDate = new Date().setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        startDate = weekAgo.getTime();
+        break;
+      case 'month':
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        startDate = monthAgo.getTime();
+        break;
+      default:
+        startDate = new Date().setHours(0, 0, 0, 0);
+    }
+
+    return { startDate, endDate: now };
+  };
+
+  const loadReport = () => {
+    const { startDate, endDate } = getReportRange();
+    const nextReport = reportService.getReport(reportTab, startDate, endDate);
+    setReport(nextReport);
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const { startDate, endDate } = getReportRange();
+      await reportService.exportCsv(reportTab, startDate, endDate);
+      Alert.alert('Export Complete', 'CSV report saved and ready to share.');
+    } catch (error) {
+      Alert.alert('Export Failed', 'Unable to export CSV report.');
+    }
+  };
 
   const loadStaffUsers = () => {
     const allUsers = userService.getAllUsers();
@@ -175,6 +227,16 @@ const ProfileScreen: React.FC = () => {
             <Text style={styles.menuItemText}>Settings</Text>
             <Text style={styles.menuItemArrow}>›</Text>
           </TouchableOpacity>
+
+          {isAdmin && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setIsReportsVisible(true)}
+            >
+              <Text style={styles.menuItemText}>Reports</Text>
+              <Text style={styles.menuItemArrow}>›</Text>
+            </TouchableOpacity>
+          )}
 
           {isAdmin && (
             <TouchableOpacity
@@ -417,6 +479,148 @@ const ProfileScreen: React.FC = () => {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Reports Modal */}
+      <Modal
+        visible={isReportsVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsReportsVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Reports</Text>
+            <TouchableOpacity onPress={() => setIsReportsVisible(false)}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.reportsTabContainer}>
+            <TouchableOpacity
+              style={[
+                styles.reportsTab,
+                reportTab === 'billing' && styles.reportsTabActive,
+              ]}
+              onPress={() => setReportTab('billing')}
+            >
+              <Text
+                style={[
+                  styles.reportsTabText,
+                  reportTab === 'billing' && styles.reportsTabTextActive,
+                ]}
+              >
+                Billing
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.reportsTab,
+                reportTab === 'token' && styles.reportsTabActive,
+              ]}
+              onPress={() => setReportTab('token')}
+            >
+              <Text
+                style={[
+                  styles.reportsTabText,
+                  reportTab === 'token' && styles.reportsTabTextActive,
+                ]}
+              >
+                Token
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.reportsPeriodContainer}>
+            {(['today', 'week', 'month'] as const).map(period => (
+              <TouchableOpacity
+                key={period}
+                style={[
+                  styles.reportsPeriodButton,
+                  selectedPeriod === period && styles.reportsPeriodButtonActive,
+                ]}
+                onPress={() => setSelectedPeriod(period)}
+              >
+                <Text
+                  style={[
+                    styles.reportsPeriodText,
+                    selectedPeriod === period && styles.reportsPeriodTextActive,
+                  ]}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {report ? (
+              <>
+                <View style={styles.reportsSummaryContainer}>
+                  <View style={styles.reportsSummaryCard}>
+                    <Text style={styles.reportsSummaryLabel}>Total Sales</Text>
+                    <Text style={styles.reportsSummaryValue}>
+                      {formatCurrency(report.totalSales)}
+                    </Text>
+                  </View>
+                  <View style={styles.reportsSummaryCard}>
+                    <Text style={styles.reportsSummaryLabel}>Total Orders</Text>
+                    <Text style={styles.reportsSummaryValue}>{report.totalOrders}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.reportsSummaryContainer}>
+                  <View style={styles.reportsSummaryCard}>
+                    <Text style={styles.reportsSummaryLabel}>Average Order</Text>
+                    <Text style={styles.reportsSummaryValue}>
+                      {formatCurrency(report.averageOrderValue)}
+                    </Text>
+                  </View>
+                  <View style={styles.reportsSummaryCard}>
+                    <Text style={styles.reportsSummaryLabel}>Date Range</Text>
+                    <Text style={styles.reportsSummaryValueSmall}>
+                      {formatDate(report.dateRange.start)}
+                    </Text>
+                    <Text style={styles.reportsSummaryValueSmall}>
+                      {formatDate(report.dateRange.end)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.reportsSection}>
+                  <Text style={styles.reportsSectionTitle}>Top Products</Text>
+                  {report.topProducts.length > 0 ? (
+                    report.topProducts.map(product => (
+                      <View key={product.productId} style={styles.reportsProductRow}>
+                        <View style={styles.reportsProductInfo}>
+                          <Text style={styles.reportsProductName}>{product.productName}</Text>
+                          <Text style={styles.reportsProductDetails}>
+                            {product.quantity} sold
+                          </Text>
+                        </View>
+                        <Text style={styles.reportsProductRevenue}>
+                          {formatCurrency(product.revenue)}
+                        </Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>No sales data for this period</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity style={styles.exportButton} onPress={handleExportCsv}>
+                  <Text style={styles.exportButtonText}>Download CSV</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Loading report...</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -623,6 +827,133 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  reportsTabContainer: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  reportsTab: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 8,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+  },
+  reportsTabActive: {
+    backgroundColor: colors.primary,
+  },
+  reportsTabText: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  reportsTabTextActive: {
+    color: colors.surface,
+  },
+  reportsPeriodContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  reportsPeriodButton: {
+    flex: 1,
+    padding: spacing.sm,
+    borderRadius: 8,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+  },
+  reportsPeriodButtonActive: {
+    backgroundColor: colors.accent,
+  },
+  reportsPeriodText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  reportsPeriodTextActive: {
+    color: colors.surface,
+  },
+  reportsSummaryContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  reportsSummaryCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    alignItems: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reportsSummaryLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  reportsSummaryValue: {
+    ...typography.h2,
+    color: colors.primary,
+    textAlign: 'center',
+  },
+  reportsSummaryValueSmall: {
+    ...typography.caption,
+    color: colors.text,
+  },
+  reportsSection: {
+    marginTop: spacing.md,
+  },
+  reportsSectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  reportsProductRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  reportsProductInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  reportsProductName: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  reportsProductDetails: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  reportsProductRevenue: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  exportButton: {
+    backgroundColor: colors.primary,
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  exportButtonText: {
+    ...typography.button,
+    color: colors.surface,
   },
 });
 

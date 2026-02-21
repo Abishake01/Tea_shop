@@ -59,7 +59,7 @@ const TokenScreen: React.FC = () => {
         }
         navigation.setParams({ openReceiptId: undefined });
       }
-    }, [])
+    }, [navigation, route.params?.openReceiptId])
   );
 
   const loadTokenOrders = () => {

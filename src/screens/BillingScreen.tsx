@@ -56,7 +56,7 @@ const BillingScreen: React.FC = () => {
         }
         navigation.setParams({ openReceiptId: undefined });
       }
-    }, [])
+    }, [navigation, route.params?.openReceiptId])
   );
 
   const loadOrders = () => {
