@@ -16,6 +16,7 @@ import { colors, spacing, typography } from '../theme';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import ReceiptView from '../components/common/ReceiptView';
 import { useFocusEffect } from '@react-navigation/native';
+import { printService } from '../services/printService';
 
 const TokenScreen: React.FC = () => {
   const { user } = useAuth();
@@ -69,6 +70,14 @@ const TokenScreen: React.FC = () => {
   const handleViewReceipt = (order: Order) => {
     setSelectedOrder(order);
     setIsReceiptVisible(true);
+  };
+
+  const handlePrint = async () => {
+    if (!selectedOrder) return;
+    const result = await printService.printOrder(selectedOrder);
+    if (!result.success && result.message) {
+      alert(result.message);
+    }
   };
 
   const getStatusColor = (status?: string) => {
@@ -227,9 +236,14 @@ const TokenScreen: React.FC = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Token Receipt</Text>
-            <TouchableOpacity onPress={() => setIsReceiptVisible(false)}>
-              <Text style={styles.closeButton}>Close</Text>
-            </TouchableOpacity>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={handlePrint}>
+                <Text style={styles.printButton}>Print</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setIsReceiptVisible(false)}>
+                <Text style={styles.closeButton}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           {selectedOrder && <ReceiptView order={selectedOrder} />}
         </View>
@@ -433,6 +447,16 @@ const styles = StyleSheet.create({
   modalTitle: {
     ...typography.h1,
     color: colors.text,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  printButton: {
+    ...typography.body,
+    color: colors.accent,
+    fontWeight: '600',
   },
   closeButton: {
     ...typography.body,
