@@ -76,5 +76,6 @@ export interface Settings {
   currency: string;
   defaultTaxRate: number;
   shopName: string;
+  autoPrintAfterCheckout: boolean;
 }
 

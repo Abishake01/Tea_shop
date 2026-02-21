@@ -7,13 +7,21 @@ import { formatCurrency, formatDateTime } from '../../utils/formatters';
 interface ReceiptViewProps {
   order: Order;
   shopName?: string;
+  printerStatus?: string;
 }
 
-const ReceiptView: React.FC<ReceiptViewProps> = ({ order, shopName = 'Tea & Juice Shop' }) => {
+const ReceiptView: React.FC<ReceiptViewProps> = ({
+  order,
+  shopName = 'Tea & Juice Shop',
+  printerStatus,
+}) => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.receipt}>
         <Text style={styles.shopName}>{shopName}</Text>
+        {printerStatus ? (
+          <Text style={styles.printerStatus}>{printerStatus}</Text>
+        ) : null}
         <Text style={styles.divider}>━━━━━━━━━━━━━━━━━━━━</Text>
         
         <Text style={styles.label}>Order #{order.id.split('_')[1]}</Text>
@@ -90,6 +98,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xs,
     color: colors.text,
+  },
+  printerStatus: {
+    ...typography.receipt,
+    textAlign: 'center',
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   divider: {
     ...typography.receipt,

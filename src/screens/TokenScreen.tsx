@@ -19,6 +19,7 @@ import { formatCurrency, formatDateTime } from '../utils/formatters';
 import ReceiptView from '../components/common/ReceiptView';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { printService } from '../services/printService';
+import { settingsService } from '../services/settingsService';
 import CategoryFilter from '../components/common/CategoryFilter';
 import ProductCard from '../components/common/ProductCard';
 import CartPanel from '../components/common/CartPanel';
@@ -56,6 +57,9 @@ const TokenScreen: React.FC = () => {
           setSelectedOrder(order);
           setIsReceiptVisible(true);
           setActiveTab('orders');
+          if (settingsService.getSettings().autoPrintAfterCheckout) {
+            void printService.printOrder(order);
+          }
         }
         navigation.setParams({ openReceiptId: undefined });
       }
@@ -84,6 +88,10 @@ const TokenScreen: React.FC = () => {
     setSelectedOrder(newOrder);
     setIsReceiptVisible(true);
     setActiveTab('orders');
+
+    if (settingsService.getSettings().autoPrintAfterCheckout) {
+      void printService.printOrder(newOrder);
+    }
   };
 
   const handleUpdateStatus = (orderId: string, newStatus: 'preparing' | 'ready' | 'completed') => {
@@ -330,7 +338,12 @@ const TokenScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-          {selectedOrder && <ReceiptView order={selectedOrder} />}
+          {selectedOrder && (
+            <ReceiptView
+              order={selectedOrder}
+              printerStatus={printService.getPrinterStatusLabel()}
+            />
+          )}
         </View>
       </Modal>
     </View>

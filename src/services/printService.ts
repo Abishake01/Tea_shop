@@ -143,6 +143,17 @@ const printEscPos = async (text: string): Promise<boolean> => {
 };
 
 export const printService = {
+  getPrinterStatusLabel: (): string => {
+    if (isExpoGo) {
+      return 'Printer: Unsupported in Expo Go';
+    }
+    const selectedAddress = Storage.getString(StorageKeys.PRINTER_ADDRESS);
+    if (!selectedAddress) {
+      return 'Printer: Not connected';
+    }
+    return `Printer: ${selectedAddress}`;
+  },
+
   isPrinterSupported: (): boolean => {
     return !isExpoGo;
   },

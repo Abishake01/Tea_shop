@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
   FlatList,
+  Switch,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
@@ -364,6 +365,19 @@ const ProfileScreen: React.FC = () => {
                 }}
                 placeholder="0"
                 keyboardType="decimal-pad"
+              />
+            </View>
+
+            <View style={styles.formGroupRow}>
+              <View>
+                <Text style={styles.label}>Auto print after checkout</Text>
+                <Text style={styles.helperText}>Shows preview and prints automatically</Text>
+              </View>
+              <Switch
+                value={settings.autoPrintAfterCheckout}
+                onValueChange={value =>
+                  setSettings({ ...settings, autoPrintAfterCheckout: value })
+                }
               />
             </View>
 
@@ -863,11 +877,21 @@ const styles = StyleSheet.create({
   formGroup: {
     marginBottom: spacing.md,
   },
+  formGroupRow: {
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   label: {
     ...typography.bodySmall,
     color: colors.text,
     marginBottom: spacing.sm,
     fontWeight: '600',
+  },
+  helperText: {
+    ...typography.caption,
+    color: colors.textSecondary,
   },
   input: {
     backgroundColor: colors.surface,

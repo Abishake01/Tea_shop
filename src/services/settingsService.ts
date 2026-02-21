@@ -5,6 +5,7 @@ const DEFAULT_SETTINGS: Settings = {
   currency: 'USD',
   defaultTaxRate: 0,
   shopName: 'Tea & Juice Shop',
+  autoPrintAfterCheckout: false,
 };
 
 export const settingsService = {
