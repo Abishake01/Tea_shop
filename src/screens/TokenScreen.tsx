@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -76,7 +77,7 @@ const TokenScreen: React.FC = () => {
     if (!selectedOrder) return;
     const result = await printService.printOrder(selectedOrder);
     if (!result.success && result.message) {
-      alert(result.message);
+      Alert.alert('Print Not Available', result.message);
     }
   };
 
