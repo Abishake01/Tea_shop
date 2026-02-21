@@ -11,8 +11,8 @@ import { colors } from '../theme';
 
 export type BottomTabParamList = {
   Home: undefined;
-  Billing: undefined;
-  Token: undefined;
+  Billing: { openReceiptId?: string } | undefined;
+  Token: { openReceiptId?: string } | undefined;
   Product: undefined;
   Profile: undefined;
 };

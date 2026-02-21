@@ -68,6 +68,11 @@ export const orderService = {
     return orders.filter(order => order.tokenNumber !== undefined);
   },
 
+  getBillingOrders: (): Order[] => {
+    const orders = orderService.getAllOrders();
+    return orders.filter(order => order.tokenNumber === undefined);
+  },
+
   updateOrderStatus: (id: string, status: 'preparing' | 'ready' | 'completed'): Order | null => {
     const orders = orderService.getAllOrders();
     const index = orders.findIndex(o => o.id === id);
@@ -98,7 +103,7 @@ export const orderService = {
     const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
 
     // Calculate top products
-    const productMap = new Map<string, { productName: string; quantity: number; revenue: number }>();
+    const productMap = new Map<string, { productId: string; productName: string; quantity: number; revenue: number }>();
     
     orders.forEach(order => {
       order.items.forEach(item => {
@@ -108,6 +113,7 @@ export const orderService = {
           existing.revenue += item.subtotal;
         } else {
           productMap.set(item.productId, {
+            productId: item.productId,
             productName: item.productName,
             quantity: item.quantity,
             revenue: item.subtotal,
