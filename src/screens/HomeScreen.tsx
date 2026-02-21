@@ -11,6 +11,7 @@ import CartPanel from '../components/common/CartPanel';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabParamList } from '../navigation/BottomTabNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { printService } from '../services/printService';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'Home'>;
 
@@ -40,19 +41,29 @@ const HomeScreen: React.FC = () => {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Regular Order',
-          onPress: () => {
-            orderService.createOrder(items, user.id);
+          onPress: async () => {
+            const newOrder = orderService.createOrder(items, user.id);
             clearCart();
             navigation.navigate('Billing');
+
+            const printResult = await printService.printOrder(newOrder);
+            if (!printResult.success && printResult.message) {
+              Alert.alert('Print Not Available', printResult.message);
+            }
           },
         },
         {
           text: 'Token Order',
-          onPress: () => {
+          onPress: async () => {
             const tokenNumber = orderService.getNextTokenNumber();
-            orderService.createOrder(items, user.id, tokenNumber);
+            const newOrder = orderService.createOrder(items, user.id, tokenNumber);
             clearCart();
             navigation.navigate('Token');
+
+            const printResult = await printService.printOrder(newOrder);
+            if (!printResult.success && printResult.message) {
+              Alert.alert('Print Not Available', printResult.message);
+            }
           },
         },
       ]
