@@ -17,6 +17,7 @@ import { User, Settings, SalesReport } from '../types';
 import { colors, spacing, typography } from '../theme';
 import { reportService } from '../services/reportService';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { printService } from '../services/printService';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
@@ -29,6 +30,12 @@ const ProfileScreen: React.FC = () => {
   const [reportTab, setReportTab] = useState<'billing' | 'token'>('billing');
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
   const [report, setReport] = useState<SalesReport | null>(null);
+  const [isPrinterVisible, setIsPrinterVisible] = useState(false);
+  const [printers, setPrinters] = useState<Array<{ name: string; address: string }>>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [selectedPrinter, setSelectedPrinter] = useState<string | undefined>(
+    printService.getSelectedPrinter()
+  );
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -51,6 +58,11 @@ const ProfileScreen: React.FC = () => {
     if (!isReportsVisible) return;
     loadReport();
   }, [isReportsVisible, reportTab, selectedPeriod]);
+
+  useEffect(() => {
+    if (!isPrinterVisible) return;
+    refreshPrinters();
+  }, [isPrinterVisible]);
 
   const getReportRange = () => {
     const now = Date.now();
@@ -90,6 +102,36 @@ const ProfileScreen: React.FC = () => {
       Alert.alert('Export Complete', 'CSV report saved and ready to share.');
     } catch (error) {
       Alert.alert('Export Failed', 'Unable to export CSV report.');
+    }
+  };
+
+  const refreshPrinters = async () => {
+    setIsScanning(true);
+    try {
+      const list = await printService.listPrinters();
+      setPrinters(list);
+      setSelectedPrinter(printService.getSelectedPrinter());
+    } catch {
+      Alert.alert('Printer Scan Failed', 'Unable to scan Bluetooth printers.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleConnectPrinter = async (address: string) => {
+    const connected = await printService.connectPrinter(address);
+    if (connected) {
+      setSelectedPrinter(address);
+      Alert.alert('Printer Connected', 'MTP-II connected successfully.');
+    } else {
+      Alert.alert('Connection Failed', 'Unable to connect to printer.');
+    }
+  };
+
+  const handleTestPrint = async () => {
+    const result = await printService.printTest();
+    if (!result.success && result.message) {
+      Alert.alert('Print Failed', result.message);
     }
   };
 
@@ -234,6 +276,16 @@ const ProfileScreen: React.FC = () => {
               onPress={() => setIsReportsVisible(true)}
             >
               <Text style={styles.menuItemText}>Reports</Text>
+              <Text style={styles.menuItemArrow}>›</Text>
+            </TouchableOpacity>
+          )}
+
+          {isAdmin && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setIsPrinterVisible(true)}
+            >
+              <Text style={styles.menuItemText}>Printer Setup</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
           )}
@@ -621,6 +673,68 @@ const ProfileScreen: React.FC = () => {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Printer Setup Modal */}
+      <Modal
+        visible={isPrinterVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsPrinterVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Printer Setup</Text>
+            <TouchableOpacity onPress={() => setIsPrinterVisible(false)}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.printerActions}>
+            <TouchableOpacity style={styles.scanButton} onPress={refreshPrinters}>
+              <Text style={styles.scanButtonText}>
+                {isScanning ? 'Scanning...' : 'Scan Printers'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.testButton} onPress={handleTestPrint}>
+              <Text style={styles.testButtonText}>Test Print</Text>
+            </TouchableOpacity>
+          </View>
+
+          {!printService.isPrinterSupported() && (
+            <View style={styles.printerNote}>
+              <Text style={styles.printerNoteText}>
+                Printer setup requires a custom dev build. Expo Go cannot access Bluetooth SPP.
+              </Text>
+            </View>
+          )}
+
+          <ScrollView style={styles.modalContent}>
+            {printers.length > 0 ? (
+              printers.map(device => (
+                <TouchableOpacity
+                  key={device.address}
+                  style={styles.printerRow}
+                  onPress={() => handleConnectPrinter(device.address)}
+                >
+                  <View style={styles.printerInfo}>
+                    <Text style={styles.printerName}>{device.name}</Text>
+                    <Text style={styles.printerAddress}>{device.address}</Text>
+                  </View>
+                  {selectedPrinter === device.address ? (
+                    <Text style={styles.printerStatus}>Connected</Text>
+                  ) : (
+                    <Text style={styles.printerStatusInactive}>Tap to connect</Text>
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No printers found</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -954,6 +1068,79 @@ const styles = StyleSheet.create({
   exportButtonText: {
     ...typography.button,
     color: colors.surface,
+  },
+  printerActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  scanButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  scanButtonText: {
+    ...typography.bodySmall,
+    color: colors.surface,
+    fontWeight: '600',
+  },
+  testButton: {
+    flex: 1,
+    backgroundColor: colors.accent,
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    ...typography.bodySmall,
+    color: colors.surface,
+    fontWeight: '600',
+  },
+  printerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  printerInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  printerName: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  printerAddress: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  printerStatus: {
+    ...typography.caption,
+    color: colors.success,
+    fontWeight: '600',
+  },
+  printerStatusInactive: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  printerNote: {
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  printerNoteText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });
 
