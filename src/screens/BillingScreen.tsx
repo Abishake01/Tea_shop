@@ -165,7 +165,7 @@ const BillingScreen: React.FC = () => {
               <ProductCard product={item} onPress={addItem} />
             )}
             keyExtractor={item => item.id}
-            numColumns={2}
+            numColumns={3}
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.surface,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     flexDirection: 'row',
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    padding: spacing.md,
+    padding: spacing.sm,
     gap: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    padding: spacing.md,
+    padding: spacing.sm,
     borderRadius: 8,
     backgroundColor: colors.border,
     alignItems: 'center',
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   row: {
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   searchContainer: {
     padding: spacing.md,
@@ -347,7 +347,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   listContent: {
-    padding: spacing.md,
+    padding: spacing.sm,
+    paddingBottom: 140,
   },
   orderCard: {
     backgroundColor: colors.surface,

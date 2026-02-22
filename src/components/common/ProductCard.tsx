@@ -38,10 +38,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) => {
 
 const styles = StyleSheet.create({
   card: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: spacing.md,
+    marginHorizontal: spacing.xs,
+    marginBottom: spacing.sm,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -50,7 +52,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 120,
+    height: 96,
     backgroundColor: colors.border,
   },
   placeholder: {
@@ -62,14 +64,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   info: {
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   name: {
     ...typography.body,
     color: colors.text,
     fontWeight: '600',
     marginBottom: spacing.xs,
-    minHeight: 40,
+    minHeight: 32,
   },
   price: {
     ...typography.h3,

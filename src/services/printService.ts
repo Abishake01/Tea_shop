@@ -51,7 +51,7 @@ const formatMoney = (amount: number, currency: string): string => {
   try {
     return formatCurrency(amount, currency);
   } catch {
-    return `$${amount.toFixed(2)}`;
+    return `₹${amount.toFixed(2)}`;
   }
 };
 
@@ -240,7 +240,7 @@ export const printService = {
     const text = formatOrderText(
       order,
       settings.shopName || 'Tea & Juice Shop',
-      settings.currency || 'USD'
+      settings.currency || 'INR'
     );
 
     const selectedAddress = Storage.getString(StorageKeys.PRINTER_ADDRESS);

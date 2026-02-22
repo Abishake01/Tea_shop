@@ -249,7 +249,7 @@ const TokenScreen: React.FC = () => {
               <ProductCard product={item} onPress={addItem} />
             )}
             keyExtractor={item => item.id}
-            numColumns={2}
+            numColumns={3}
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.surface,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     flexDirection: 'row',
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    padding: spacing.md,
+    padding: spacing.sm,
     gap: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    padding: spacing.md,
+    padding: spacing.sm,
     borderRadius: 8,
     backgroundColor: colors.border,
     alignItems: 'center',
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   },
   row: {
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   filterContainer: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -463,7 +463,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   listContent: {
-    padding: spacing.md,
+    padding: spacing.sm,
+    paddingBottom: 140,
   },
   tokenCard: {
     backgroundColor: colors.surface,

@@ -2,7 +2,7 @@ import { Storage, StorageKeys } from './storage';
 import { Settings } from '../types';
 
 const DEFAULT_SETTINGS: Settings = {
-  currency: 'USD',
+  currency: 'INR',
   defaultTaxRate: 0,
   shopName: 'Tea & Juice Shop',
   autoPrintAfterCheckout: false,

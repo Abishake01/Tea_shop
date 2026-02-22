@@ -81,7 +81,7 @@ const HomeScreen: React.FC = () => {
           <ProductCard product={item} onPress={handleProductPress} />
         )}
         keyExtractor={item => item.id}
-        numColumns={2}
+        numColumns={3}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
@@ -109,11 +109,11 @@ const styles = StyleSheet.create({
   },
   row: {
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   listContent: {
-    paddingVertical: spacing.md,
-    paddingBottom: 200, // Space for cart panel
+    paddingVertical: spacing.sm,
+    paddingBottom: 120, // Space for cart panel
   },
   emptyContainer: {
     flex: 1,

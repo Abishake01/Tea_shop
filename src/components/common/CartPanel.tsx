@@ -116,10 +116,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    maxHeight: 400,
+    maxHeight: 240,
   },
   emptyContainer: {
-    padding: spacing.lg,
+    padding: spacing.md,
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderTopWidth: 1,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -152,8 +152,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   itemsContainer: {
-    maxHeight: 200,
-    padding: spacing.md,
+    maxHeight: 110,
+    padding: spacing.sm,
   },
   item: {
     flexDirection: 'row',
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   summary: {
-    padding: spacing.md,
+    padding: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.background,
