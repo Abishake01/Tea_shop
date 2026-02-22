@@ -110,10 +110,22 @@ const ProfileScreen: React.FC = () => {
     setIsScanning(true);
     try {
       const list = await printService.listPrinters();
+      if (list.length === 0) {
+        Alert.alert(
+          'No Printers Found',
+          'Make sure:\n1. Bluetooth is enabled on your phone\n2. Your printer is turned on\n3. Your printer is in pairing/discoverable mode\n4. Your phone has location permission enabled'
+        );
+      } else {
+        Alert.alert('Success', `Found ${list.length} printer(s)`);
+      }
       setPrinters(list);
       setSelectedPrinter(printService.getSelectedPrinter());
-    } catch {
-      Alert.alert('Printer Scan Failed', 'Unable to scan Bluetooth printers.');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert(
+        'Printer Scan Failed',
+        `Could not scan for printers.\n\nError: ${errorMsg}\n\nMake sure:\n1. Bluetooth is enabled\n2. Location permission is allowed\n3. Printer is in pairing mode`
+      );
     } finally {
       setIsScanning(false);
     }

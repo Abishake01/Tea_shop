@@ -30,7 +30,7 @@ import { RouteProp } from '@react-navigation/native';
 const TokenScreen: React.FC = () => {
   const { user } = useAuth();
   const { items, clearCart, total, addItem } = useCart();
-  const { categories, getProductsByCategory } = useProducts();
+  const { categories, getProductsByCategory, refreshAll } = useProducts();
   const [tokenOrders, setTokenOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isReceiptVisible, setIsReceiptVisible] = useState(false);
@@ -48,6 +48,7 @@ const TokenScreen: React.FC = () => {
 
   useFocusEffect(
     React.useCallback(() => {
+      refreshAll();
       loadTokenOrders();
       setCurrentToken(orderService.peekNextTokenNumber());
       const receiptId = route.params?.openReceiptId;

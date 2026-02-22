@@ -1,0 +1,52 @@
+﻿[
+  {
+    "id": "eed59f53-f8da-4106-b2c2-4b3326504d6c",
+    "status": "FINISHED",
+    "platform": "ANDROID",
+    "artifacts": {
+      "buildUrl": "https://expo.dev/artifacts/eas/vuy6b61TK7kDxYepPqFN4f.apk",
+      "applicationArchiveUrl": "https://expo.dev/artifacts/eas/vuy6b61TK7kDxYepPqFN4f.apk"
+    },
+    "fingerprint": {
+      "id": "019c8068-b0c1-74db-868f-5e34f8398180",
+      "hash": "cc850f7e384006be0de44b23d98b41bfab0ec922"
+    },
+    "initiatingActor": {
+      "id": "4722eb26-ea1a-43f9-b6eb-e688849e1fa1",
+      "displayName": "abishake01"
+    },
+    "logFiles": [
+      "https://job-logs.eascdn.net/production/eed59f53-f8da-4106-b2c2-4b3326504d6c/1771680870799-1a68af94-a445-4b4f-ad45-51937fb7046d.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T134043Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=86b0437bfc11b78d68120981e63827d752798598ff15e185aefe2c009562c0f7cf65f4d6c78d4b0d50b49c5cc2470bd3efb2d76117f8634ead84a45f41fecaa42a4b86990afe8d2936953d6f4f17f90b79dc270749192d138897dfe72c5b2bc42fcc45bfe9231996b380f58246c596c137074ee711396c977c6cbc8c07009e8c9162161254d8852f5c7ed85fd3f09fd69a912df05d411d879270d4217c0a9b7a508589548891d3bb9335783248bbb9e2e130047983e2eed6a0534306cd1168e83c545aa4703f71c32446cdbe73dbdbc15c5b35c1c6bb01b1bdb066187318799e5fa0a3ef55eeb740f8b51c0c485131d8c9b83e6eece429ba51244eec2111e1cf",
+      "https://job-logs.eascdn.net/production/eed59f53-f8da-4106-b2c2-4b3326504d6c/1771680876054-a9f61097-8405-40cb-8321-aa1ef3a4bc8f.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T134043Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=8c4e92bb152e05fe2508e04797a363bb59a66d5a0d56d13f9b07666d1808c016b33a2ff42214085f11962e3894de8492a500d887f47a6580e7f24a3e1d2149fbed5ef4df45e1d8e5548a95840185745845a7a7e6488723a23c1b2bdae62895e808623382ed3f20bf5cd1e4f0d7f7f5d2c57caba5dbd6654b429d80990be993e9ed63b533059c7fca76bfe1b02d7dbe4ed55c2a14db84da4a5d4c2e6ec2cc6e9e66024999d8fb336ea201f01404c01b55b49a3a38803aa8039a1edc151a43fd3b550f6695bbc55943d1d9c22f15a175c04dac506f5d7cd37aeac7eeb3ced65b516e951ad5ad4929bbc1fee754a0aa0809906b92569ae20eed1e6e240c38d1c558",
+      "https://job-logs.eascdn.net/production/eed59f53-f8da-4106-b2c2-4b3326504d6c/1771680876274-fa9a00ba-cd4b-44c5-b7ff-3ce812bcf29e.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T134043Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=bcd478226597cfd0055d2b77b76e58fb7a8e2474c63cf1816083c63ea0abdfb2de1c8982c837ccd31a02ebdb7a6034bbb5eb48ff396d8a349081c347fe9321aba5cc110a26da2e4e2ce3c3e4bf9752cef56de252aade3f7b2347010fc409cb59ae27f7d9611049b80418e0bf8261f2f0e0135875e3ca2ddfc4cc634b3a866e1a02a8db4562d9995c776066684bde27b1363ba5bee1e4e269c90083b5068864a986d7bc9c5f707aad69811e1620ceb95801605f074252b75b6d5dd16aa695fa2c26d0797d89ac1d78de5ca0ee98afc74fa7087346f7f21173280b9258bb01d0fc252d6be0c78c55c26a3bbcd6a0b12679fc2bc463698b11eadc3122bed2cc21d2",
+      "https://job-logs.eascdn.net/production/eed59f53-f8da-4106-b2c2-4b3326504d6c/1771680876454-f20dfffb-0bab-4858-b580-36dcb8989cf3.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T134043Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=206997c41907f23ae36e30424eb795fa3f4fbf842eea16bbb9e7dfc144663f1ead3d270a685af151d4d8128ef5eda65c141b8a7c679e85f48b0113f15d52858e281a9a14a8a53e2fa687f260bfc7fa9d56f3d30bd6e002c3a7ae39a249e40cac61dcdf68c23d213d3e68530285d80ac545921fc787c285dd0775a89bb7d35fc14cd2164df55b076d8ef5f30e44bdc5058116e5f2855a745635ec33c4ab3d0bcac52300281fe1aa22c3c438336bacbf672dd482fab6f6d102c5330aecd1832ef7ac727e9af26e6c66793ef46c610c02465f62bb63d34f237064fa07af2a5cf038877ed74dc27b1f862cae3120d1c19953d347d64fe23fd6de8b213a8c068e9590"
+    ],
+    "project": {
+      "id": "0dcbfeba-1850-4934-b5eb-24b9c12f2f26",
+      "name": "Tea_Shop",
+      "slug": "Tea_Shop",
+      "ownerAccount": {
+        "id": "1bf4459a-9d23-4934-af00-9d0c7b46c145",
+        "name": "abishake01"
+      }
+    },
+    "distribution": "INTERNAL",
+    "buildProfile": "development",
+    "sdkVersion": "54.0.0",
+    "appVersion": "1.0.0",
+    "appBuildVersion": "1",
+    "gitCommitHash": "14b70d4ac1a3cdd20a1000b4873a60f3ed7818f6",
+    "gitCommitMessage": "Add auto print feature and printer status display in ReceiptView\n\n- Implement auto print toggle in ProfileScreen settings\n- Display printer status in ReceiptView\n- Update settings service to include autoPrintAfterCheckout\n- Add printer status retrieval in printService\n- Create eas.json for EAS configuration",
+    "priority": "NORMAL",
+    "createdAt": "2026-02-21T13:34:30.501Z",
+    "updatedAt": "2026-02-21T13:40:38.934Z",
+    "completedAt": "2026-02-21T13:40:30.065Z",
+    "expirationDate": "2026-03-07T13:34:30.574Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 185,
+      "buildQueueTime": 48561,
+      "buildDuration": 310472
+    }
+  }
+]

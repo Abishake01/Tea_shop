@@ -8,6 +8,7 @@ interface ProductContextType {
   activeProducts: Product[];
   fetchProducts: () => void;
   fetchCategories: () => void;
+  refreshAll: () => void;
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Product;
   updateProduct: (id: string, product: Partial<Product>) => Product | null;
   deleteProduct: (id: string) => boolean;
@@ -88,12 +89,18 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     return success;
   };
 
+  const refreshAll = (): void => {
+    fetchProducts();
+    fetchCategories();
+  };
+
   const value: ProductContextType = {
     products,
     categories,
     activeProducts: products.filter(p => p.isActive),
     fetchProducts,
     fetchCategories,
+    refreshAll,
     addProduct,
     updateProduct,
     deleteProduct,

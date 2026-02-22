@@ -30,7 +30,7 @@ import { RouteProp } from '@react-navigation/native';
 const BillingScreen: React.FC = () => {
   const { user } = useAuth();
   const { items, clearCart, total, addItem } = useCart();
-  const { categories, getProductsByCategory } = useProducts();
+  const { categories, getProductsByCategory, refreshAll } = useProducts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isReceiptVisible, setIsReceiptVisible] = useState(false);
@@ -46,6 +46,7 @@ const BillingScreen: React.FC = () => {
 
   useFocusEffect(
     React.useCallback(() => {
+      refreshAll();
       loadOrders();
       const receiptId = route.params?.openReceiptId;
       if (receiptId) {

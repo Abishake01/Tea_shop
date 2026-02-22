@@ -8,18 +8,25 @@ import { colors, spacing } from '../theme';
 import ProductCard from '../components/common/ProductCard';
 import CategoryFilter from '../components/common/CategoryFilter';
 import CartPanel from '../components/common/CartPanel';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BottomTabParamList } from '../navigation/BottomTabNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'Home'>;
 
 const HomeScreen: React.FC = () => {
-  const { activeProducts, categories, getProductsByCategory } = useProducts();
+  const { activeProducts, categories, getProductsByCategory, refreshAll } = useProducts();
   const { addItem, items, clearCart } = useCart();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const navigation = useNavigation<HomeScreenNavigationProp>();
+
+  // Refresh products whenever screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshAll();
+    }, [])
+  );
 
   const filteredProducts = getProductsByCategory(selectedCategory);
 
@@ -61,11 +68,13 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <CategoryFilter
-        categories={categories}
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-      />
+      <View style={{ marginTop: spacing.lg }}>
+        <CategoryFilter
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
+      </View>
       <FlatList
         data={filteredProducts}
         renderItem={({ item }) => (

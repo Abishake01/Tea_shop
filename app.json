@@ -3,6 +3,7 @@
     "name": "Tea_Shop",
     "slug": "Tea_Shop",
     "version": "1.0.0",
+    "scheme": "tea-shop",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -27,7 +28,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.abishake01.Tea_Shop"
     },
     "web": {
       "favicon": "./assets/favicon.png"

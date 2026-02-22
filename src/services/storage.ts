@@ -43,7 +43,9 @@ export const Storage = {
 
   setString: (key: string, value: string): void => {
     cache.set(key, value);
-    void AsyncStorage.setItem(scopedKey(key), value);
+    AsyncStorage.setItem(scopedKey(key), value).catch(err => {
+      console.error(`[Storage] Failed to write ${key}:`, err);
+    });
   },
 
   getNumber: (key: string): number | undefined => {
@@ -56,7 +58,9 @@ export const Storage = {
   setNumber: (key: string, value: number): void => {
     const raw = String(value);
     cache.set(key, raw);
-    void AsyncStorage.setItem(scopedKey(key), raw);
+    AsyncStorage.setItem(scopedKey(key), raw).catch(err => {
+      console.error(`[Storage] Failed to write ${key}:`, err);
+    });
   },
 
   getBoolean: (key: string): boolean | undefined => {
@@ -70,7 +74,9 @@ export const Storage = {
   setBoolean: (key: string, value: boolean): void => {
     const raw = String(value);
     cache.set(key, raw);
-    void AsyncStorage.setItem(scopedKey(key), raw);
+    AsyncStorage.setItem(scopedKey(key), raw).catch(err => {
+      console.error(`[Storage] Failed to write ${key}:`, err);
+    });
   },
 
   // Type-safe JSON helpers
@@ -83,7 +89,9 @@ export const Storage = {
   setObject: <T>(key: string, value: T): void => {
     const raw = serialize(value);
     cache.set(key, raw);
-    void AsyncStorage.setItem(scopedKey(key), raw);
+    AsyncStorage.setItem(scopedKey(key), raw).catch(err => {
+      console.error(`[Storage] Failed to write ${key}:`, err);
+    });
   },
 
   // Array helpers
@@ -97,13 +105,17 @@ export const Storage = {
   setArray: <T>(key: string, value: T[]): void => {
     const raw = serialize(value);
     cache.set(key, raw);
-    void AsyncStorage.setItem(scopedKey(key), raw);
+    AsyncStorage.setItem(scopedKey(key), raw).catch(err => {
+      console.error(`[Storage] Failed to write ${key}:`, err);
+    });
   },
 
   // Delete
   delete: (key: string): void => {
     cache.delete(key);
-    void AsyncStorage.removeItem(scopedKey(key));
+    AsyncStorage.removeItem(scopedKey(key)).catch(err => {
+      console.error(`[Storage] Failed to delete ${key}:`, err);
+    });
   },
 
   // Clear all
@@ -111,7 +123,9 @@ export const Storage = {
     const keysToClear = Array.from(cache.keys());
     cache.clear();
     if (keysToClear.length > 0) {
-      void AsyncStorage.multiRemove(keysToClear.map(scopedKey));
+      AsyncStorage.multiRemove(keysToClear.map(scopedKey)).catch(err => {
+        console.error('[Storage] Failed to clear all:', err);
+      });
     }
   },
 

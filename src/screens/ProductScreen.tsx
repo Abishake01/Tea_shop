@@ -27,6 +27,25 @@ const ProductScreen: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isReportsVisible, setIsReportsVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    category: '',
+    sku: '',
+    tax: '0',
+    isActive: true,
+    imageUri: '',
+  });
+
+  // Initialize category once categories are loaded
+  useEffect(() => {
+    if (categories.length > 0 && !formData.category) {
+      setFormData(prev => ({
+        ...prev,
+        category: categories[0].name,
+      }));
+    }
+  }, [categories]);
 
   // Redirect if not admin (though navigation should handle this)
   useEffect(() => {
@@ -35,22 +54,13 @@ const ProductScreen: React.FC = () => {
       // But we add this as a safety check
     }
   }, [isAdmin]);
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    category: categories[0]?.name || '',
-    sku: '',
-    tax: '0',
-    isActive: true,
-    imageUri: '',
-  });
 
   const handleAddProduct = () => {
     setEditingProduct(null);
     setFormData({
       name: '',
       price: '',
-      category: categories[0]?.name || '',
+      category: categories[0]?.name || 'Other',
       sku: '',
       tax: '0',
       isActive: true,
@@ -198,7 +208,7 @@ const ProductScreen: React.FC = () => {
         <Text style={styles.title}>Products</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
-            style={[styles.headerButton, styles.reportsButton]}
+            style={styles.reportsButton}
             onPress={() => setIsReportsVisible(true)}
           >
             <Text style={styles.reportsButtonText}>Reports</Text>
@@ -234,7 +244,7 @@ const ProductScreen: React.FC = () => {
               {editingProduct ? 'Edit Product' : 'Add Product'}
             </Text>
             <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-              <Text style={styles.closeButton}>Close</Text>
+              <Text style={styles.modalCloseButton}>Close</Text>
             </TouchableOpacity>
           </View>
 
@@ -351,7 +361,7 @@ const ProductScreen: React.FC = () => {
           <View style={styles.reportsModalHeader}>
             <Text style={styles.reportsModalTitle}>Sales Reports</Text>
             <TouchableOpacity onPress={() => setIsReportsVisible(false)}>
-              <Text style={styles.closeButton}>Close</Text>
+              <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
           <ReportsScreen />
@@ -370,6 +380,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     padding: spacing.lg,
+    marginTop: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     flexDirection: 'row',
@@ -421,7 +432,7 @@ const styles = StyleSheet.create({
     ...typography.h1,
     color: colors.text,
   },
-  closeButton: {
+  closeButtonText: {
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
@@ -537,7 +548,7 @@ const styles = StyleSheet.create({
     ...typography.h1,
     color: colors.text,
   },
-  closeButton: {
+  modalCloseButton: {
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
