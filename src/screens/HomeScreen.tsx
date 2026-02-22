@@ -7,7 +7,8 @@ import { orderService } from '../services/orderService';
 import { colors, spacing } from '../theme';
 import ProductCard from '../components/common/ProductCard';
 import CategoryFilter from '../components/common/CategoryFilter';
-import CartPanel from '../components/common/CartPanel';
+import FloatingCartButton from '../components/common/FloatingCartButton';
+import CartBottomSheet from '../components/common/CartBottomSheet';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BottomTabParamList } from '../navigation/BottomTabNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,9 +17,10 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'H
 
 const HomeScreen: React.FC = () => {
   const { activeProducts, categories, getProductsByCategory, refreshAll } = useProducts();
-  const { addItem, items, clearCart } = useCart();
+  const { addItem, items, clearCart, itemCount } = useCart();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
   // Refresh products whenever screen comes into focus
@@ -97,7 +99,15 @@ const HomeScreen: React.FC = () => {
           </View>
         }
       />
-      <CartPanel onCheckout={handleCheckout} />
+      <FloatingCartButton
+        itemCount={itemCount}
+        onPress={() => setIsCartOpen(true)}
+      />
+      <CartBottomSheet
+        visible={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onCheckout={handleCheckout}
+      />
     </View>
   );
 };
@@ -113,7 +123,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: spacing.sm,
-    paddingBottom: 120, // Space for cart panel
+    paddingBottom: 96,
   },
   emptyContainer: {
     flex: 1,

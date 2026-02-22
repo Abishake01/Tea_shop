@@ -22,14 +22,15 @@ import { printService } from '../services/printService';
 import { settingsService } from '../services/settingsService';
 import CategoryFilter from '../components/common/CategoryFilter';
 import ProductCard from '../components/common/ProductCard';
-import CartPanel from '../components/common/CartPanel';
+import FloatingCartButton from '../components/common/FloatingCartButton';
+import CartBottomSheet from '../components/common/CartBottomSheet';
 import { BottomTabParamList } from '../navigation/BottomTabNavigator';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RouteProp } from '@react-navigation/native';
 
 const BillingScreen: React.FC = () => {
   const { user } = useAuth();
-  const { items, clearCart, total, addItem } = useCart();
+  const { items, clearCart, total, addItem, itemCount } = useCart();
   const { categories, getProductsByCategory, refreshAll } = useProducts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -37,6 +38,7 @@ const BillingScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState<'checkout' | 'orders'>('checkout');
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const navigation = useNavigation<BottomTabNavigationProp<BottomTabParamList, 'Billing'>>();
   const route = useRoute<RouteProp<BottomTabParamList, 'Billing'>>();
 
@@ -181,7 +183,15 @@ const BillingScreen: React.FC = () => {
               </View>
             }
           />
-          <CartPanel onCheckout={handleCheckout} />
+          <FloatingCartButton
+            itemCount={itemCount}
+            onPress={() => setIsCartOpen(true)}
+          />
+          <CartBottomSheet
+            visible={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            onCheckout={handleCheckout}
+          />
         </View>
       ) : (
         <View style={styles.ordersContainer}>
@@ -348,7 +358,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: spacing.sm,
-    paddingBottom: 140,
+    paddingBottom: 96,
   },
   orderCard: {
     backgroundColor: colors.surface,

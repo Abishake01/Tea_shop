@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { I18nManager } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/context/AuthContext';
 import { ProductProvider } from './src/context/ProductContext';
@@ -21,6 +22,17 @@ export default function App() {
     };
 
     void bootstrap();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const direction = I18nManager?.isRTL ? 'rtl' : 'ltr';
+      if (I18nManager && !(I18nManager as any).DIRECTION) {
+        (I18nManager as any).DIRECTION = direction;
+      }
+    } catch {
+      // Ignore if native I18nManager is unavailable
+    }
   }, []);
 
   if (!isStorageReady) {

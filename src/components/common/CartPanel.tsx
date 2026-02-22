@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    maxHeight: 240,
+    maxHeight: '100%',
   },
   emptyContainer: {
     padding: spacing.md,
