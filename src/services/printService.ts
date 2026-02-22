@@ -1,8 +1,8 @@
-import Constants from 'expo-constants';
 import { Order } from '../types';
 import { settingsService } from './settingsService';
 import { Storage, StorageKeys } from './storage';
 import { formatCurrency } from '../utils/formatters';
+import { Platform, PermissionsAndroid } from 'react-native';
 
 type PrintResult = {
   success: boolean;
@@ -14,7 +14,36 @@ type PrinterDevice = {
   address: string;
 };
 
-const isExpoGo = Constants.appOwnership === 'expo';
+// Request Bluetooth permissions for Android 12+ (API 31+)
+const requestBluetoothPermissions = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') {
+    return true;
+  }
+
+  // Android 12+ requires runtime permissions for Bluetooth
+  if (Platform.Version >= 31) {
+    try {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      ]);
+
+      const allGranted =
+        granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED;
+
+      return allGranted;
+    } catch (err) {
+      console.error('[PrintService] Permission request failed:', err);
+      return false;
+    }
+  }
+
+  // Android 11 and below - permissions are granted via manifest
+  return true;
+};
 
 const line = '--------------------------------';
 
@@ -83,6 +112,12 @@ const fetchBondedDevices = async (): Promise<PrinterDevice[]> => {
   const escpos = getEscPosModule();
   if (!escpos?.BluetoothManager) return [];
 
+  // Request permissions first (critical for Android 12+)
+  const hasPermissions = await requestBluetoothPermissions();
+  if (!hasPermissions) {
+    throw new Error('Bluetooth permissions not granted. Please allow Bluetooth and Location permissions in Settings.');
+  }
+
   const result = await escpos.BluetoothManager.enableBluetooth();
   if (typeof result === 'string') {
     try {
@@ -100,6 +135,7 @@ const scanDevices = async (): Promise<PrinterDevice[]> => {
   const escpos = getEscPosModule();
   if (!escpos?.BluetoothManager) return [];
 
+  // Permissions already requested in fetchBondedDevices
   if (typeof escpos.BluetoothManager.scanDevices !== 'function') {
     return [];
   }
@@ -144,8 +180,9 @@ const printEscPos = async (text: string): Promise<boolean> => {
 
 export const printService = {
   getPrinterStatusLabel: (): string => {
-    if (isExpoGo) {
-      return 'Printer: Unsupported in Expo Go';
+    const escpos = getEscPosModule();
+    if (!escpos) {
+      return 'Printer: Library not available';
     }
     const selectedAddress = Storage.getString(StorageKeys.PRINTER_ADDRESS);
     if (!selectedAddress) {
@@ -155,7 +192,7 @@ export const printService = {
   },
 
   isPrinterSupported: (): boolean => {
-    return !isExpoGo;
+    return getEscPosModule() !== null;
   },
 
   getSelectedPrinter: (): string | undefined => {
@@ -167,7 +204,9 @@ export const printService = {
   },
 
   listPrinters: async (): Promise<PrinterDevice[]> => {
-    if (isExpoGo) return [];
+    const escpos = getEscPosModule();
+    if (!escpos) return [];
+    
     const bonded = await fetchBondedDevices();
     const scanned = await scanDevices();
     const merged = new Map<string, PrinterDevice>();
@@ -178,7 +217,9 @@ export const printService = {
   },
 
   connectPrinter: async (address: string): Promise<boolean> => {
-    if (isExpoGo) return false;
+    const escpos = getEscPosModule();
+    if (!escpos) return false;
+    
     const connected = await ensureConnected(address);
     if (connected) {
       Storage.setString(StorageKeys.PRINTER_ADDRESS, address);
@@ -187,12 +228,14 @@ export const printService = {
   },
 
   printOrder: async (order: Order): Promise<PrintResult> => {
-    if (isExpoGo) {
+    const escpos = getEscPosModule();
+    if (!escpos) {
       return {
         success: false,
-        message: 'Printing requires a custom dev build. Expo Go does not support Bluetooth SPP.',
+        message: 'Printer module not available. Ensure you are using a development or production build.',
       };
     }
+    
     const settings = settingsService.getSettings();
     const text = formatOrderText(
       order,
@@ -212,17 +255,19 @@ export const printService = {
     return {
       success: false,
       message:
-        'Printer not connected. Open Printer Setup and connect your MTP-II device, then try again.',
+        'Printer not connected. Open Printer Setup and connect your printer, then try again.',
     };
   },
 
   printTest: async (): Promise<PrintResult> => {
-    if (isExpoGo) {
+    const escpos = getEscPosModule();
+    if (!escpos) {
       return {
         success: false,
-        message: 'Printing requires a custom dev build. Expo Go does not support Bluetooth SPP.',
+        message: 'Printer module not available. Ensure you are using a development or production build.',
       };
     }
+    
     const sample: Order = {
       id: 'test_order',
       items: [
