@@ -6,7 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { orderService } from '../services/orderService';
 import { colors, spacing } from '../theme';
 import ProductCard from '../components/common/ProductCard';
-import CategoryFilter from '../components/common/CategoryFilter';
+import { CategoryDropdownFilter } from '../components/common/CategoryDropdown';
+import ScreenHeader from '../components/common/ScreenHeader';
 import FloatingCartButton from '../components/common/FloatingCartButton';
 import CartBottomSheet from '../components/common/CartBottomSheet';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -70,8 +71,9 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={{ marginTop: spacing.lg }}>
-        <CategoryFilter
+      <ScreenHeader />
+      <View style={styles.categoryRow}>
+        <CategoryDropdownFilter
           categories={categories}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
@@ -116,6 +118,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  categoryRow: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   row: {
     justifyContent: 'space-between',

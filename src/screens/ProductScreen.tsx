@@ -20,13 +20,18 @@ import { validatePrice, validateTax, validateRequired, validateSKU } from '../ut
 import { formatCurrency } from '../utils/formatters';
 import ReportsScreen from './ReportsScreen';
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import { CategoryDropdownProduct } from '../components/common/CategoryDropdown';
+import ScreenHeader from '../components/common/ScreenHeader';
+
+const DEFAULT_CATEGORY_COLOR = '#4A7C59';
 
 const ProductScreen: React.FC = () => {
-  const { products, categories, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { products, categories, addProduct, updateProduct, deleteProduct, addCategory } = useProducts();
   const { isAdmin } = useAuth();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isReportsVisible, setIsReportsVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -128,6 +133,21 @@ const ProductScreen: React.FC = () => {
     );
   };
 
+  const handleAddNewCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      Alert.alert('Error', 'Enter a category name');
+      return;
+    }
+    if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      Alert.alert('Error', 'This category already exists');
+      return;
+    }
+    addCategory({ name, color: DEFAULT_CATEGORY_COLOR });
+    setFormData(prev => ({ ...prev, category: name }));
+    setNewCategoryName('');
+  };
+
   const handleSaveProduct = () => {
     // Validation
     if (!validateRequired(formData.name)) {
@@ -136,6 +156,10 @@ const ProductScreen: React.FC = () => {
     }
     if (!validateSKU(formData.sku)) {
       Alert.alert('Error', 'Valid SKU is required');
+      return;
+    }
+    if (!validateRequired(formData.category)) {
+      Alert.alert('Error', 'Please select or add a category');
       return;
     }
     const price = parseFloat(formData.price);
@@ -170,33 +194,35 @@ const ProductScreen: React.FC = () => {
 
   const renderProductItem = ({ item }: { item: Product }) => (
     <View style={styles.productCard}>
-      {item.imageUri ? (
-        <Image source={{ uri: item.imageUri }} style={styles.productImage} />
-      ) : (
-        <View style={[styles.productImage, styles.placeholderImage]}>
-          <Text style={styles.placeholderText}>No Image</Text>
+      <View style={styles.productImageContainer}>
+        {item.imageUri ? (
+          <Image source={{ uri: item.imageUri }} style={styles.productImage} />
+        ) : (
+          <View style={[styles.productImage, styles.placeholderImage]}>
+            <Text style={styles.placeholderText}>No Image</Text>
+          </View>
+        )}
+        <View style={styles.productActionsOverImage}>
+          <TouchableOpacity
+            style={[styles.actionIconButton, styles.editButton]}
+            onPress={() => handleEditProduct(item)}
+          >
+            <Text style={styles.actionIconText}>✎</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionIconButton, styles.deleteButton]}
+            onPress={() => handleDeleteProduct(item)}
+          >
+            <Text style={styles.actionIconText}>✕</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
       <View style={styles.productInfo}>
-        <Text style={styles.productName}>{item.name}</Text>
+        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.productSku}>SKU: {item.sku}</Text>
         <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
         <Text style={styles.productCategory}>Category: {item.category}</Text>
         <Text style={styles.productTax}>Tax: {item.tax}%</Text>
-        <View style={styles.productActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.editButton]}
-            onPress={() => handleEditProduct(item)}
-          >
-            <Text style={styles.actionButtonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => handleDeleteProduct(item)}
-          >
-            <Text style={styles.actionButtonText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </View>
   );
@@ -204,6 +230,7 @@ const ProductScreen: React.FC = () => {
   return (
     <ProtectedRoute requireAdmin>
       <View style={styles.container}>
+      <ScreenHeader />
       <View style={styles.header}>
         <Text style={styles.title}>Products</Text>
         <View style={styles.headerButtons}>
@@ -223,6 +250,8 @@ const ProductScreen: React.FC = () => {
         data={products}
         renderItem={renderProductItem}
         keyExtractor={item => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.productRow}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -248,7 +277,11 @@ const ProductScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView
+            style={styles.modalContent}
+            contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={true}
+          >
             <TouchableOpacity style={styles.imagePicker} onPress={handlePickImage}>
               {formData.imageUri ? (
                 <Image source={{ uri: formData.imageUri }} style={styles.previewImage} />
@@ -292,27 +325,24 @@ const ProductScreen: React.FC = () => {
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>Category *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {categories.map(cat => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.categoryChip,
-                      formData.category === cat.name && styles.categoryChipActive,
-                    ]}
-                    onPress={() => setFormData({ ...formData, category: cat.name })}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryChipText,
-                        formData.category === cat.name && styles.categoryChipTextActive,
-                      ]}
-                    >
-                      {cat.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <CategoryDropdownProduct
+                categories={categories}
+                selectedCategory={formData.category}
+                onSelectCategory={name => setFormData({ ...formData, category: name })}
+                placeholder="Select category"
+              />
+              <View style={styles.newCategoryRow}>
+                <TextInput
+                  style={styles.newCategoryInput}
+                  placeholder="New category name"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                />
+                <TouchableOpacity style={styles.addCategoryButton} onPress={handleAddNewCategory}>
+                  <Text style={styles.addCategoryButtonText}>Add</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.formGroup}>
@@ -440,23 +470,33 @@ const styles = StyleSheet.create({
   listContent: {
     padding: spacing.md,
   },
+  productRow: {
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
   productCard: {
+    flex: 1,
+    minWidth: 0,
+    maxWidth: '48%',
     backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    flexDirection: 'row',
+    overflow: 'hidden',
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
+  productImageContainer: {
+    width: '100%',
+    height: 100,
+    position: 'relative',
+  },
   productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: spacing.md,
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
   },
   placeholderImage: {
     backgroundColor: colors.border,
@@ -467,11 +507,41 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
   },
+  productActionsOverImage: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  actionIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButton: {
+    backgroundColor: colors.primary,
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
+  },
+  actionIconText: {
+    fontSize: 18,
+    color: colors.surface,
+  },
   productInfo: {
-    flex: 1,
+    padding: spacing.sm,
   },
   productName: {
-    ...typography.h3,
+    ...typography.bodySmall,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.xs,
   },
@@ -481,7 +551,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   productPrice: {
-    ...typography.body,
+    ...typography.bodySmall,
     color: colors.primary,
     fontWeight: '600',
     marginBottom: spacing.xs,
@@ -494,27 +564,6 @@ const styles = StyleSheet.create({
   productTax: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  productActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 6,
-  },
-  editButton: {
-    backgroundColor: colors.primary,
-  },
-  deleteButton: {
-    backgroundColor: colors.error,
-  },
-  actionButtonText: {
-    ...typography.caption,
-    color: colors.surface,
-    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
@@ -557,10 +606,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.lg,
   },
+  modalScrollContent: {
+    paddingBottom: 100,
+  },
   imagePicker: {
     width: '100%',
-    height: 200,
-    marginBottom: spacing.lg,
+    height: 100,
+    marginBottom: spacing.md,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -598,22 +650,34 @@ const styles = StyleSheet.create({
     color: colors.text,
     minHeight: 48,
   },
-  categoryChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    backgroundColor: colors.border,
-    marginRight: spacing.sm,
+  newCategoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  categoryChipActive: {
-    backgroundColor: colors.primary,
-  },
-  categoryChipText: {
+  newCategoryInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
     ...typography.bodySmall,
     color: colors.text,
+    minHeight: 44,
   },
-  categoryChipTextActive: {
+  addCategoryButton: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  addCategoryButtonText: {
+    ...typography.bodySmall,
     color: colors.surface,
+    fontWeight: '600',
   },
   toggleButton: {
     backgroundColor: colors.border,

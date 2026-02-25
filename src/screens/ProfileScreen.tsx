@@ -19,6 +19,7 @@ import { colors, spacing, typography } from '../theme';
 import { reportService } from '../services/reportService';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { printService } from '../services/printService';
+import ScreenHeader from '../components/common/ScreenHeader';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
@@ -34,9 +35,8 @@ const ProfileScreen: React.FC = () => {
   const [isPrinterVisible, setIsPrinterVisible] = useState(false);
   const [printers, setPrinters] = useState<Array<{ name: string; address: string }>>([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [selectedPrinter, setSelectedPrinter] = useState<string | undefined>(
-    printService.getSelectedPrinter()
-  );
+  const [selectedPrinter, setSelectedPrinter] = useState<string | undefined>(undefined);
+  const [printerSupported, setPrinterSupported] = useState<boolean | null>(null);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -62,8 +62,16 @@ const ProfileScreen: React.FC = () => {
 
   useEffect(() => {
     if (!isPrinterVisible) return;
-    refreshPrinters();
+    try {
+      setPrinterSupported(printService.isPrinterSupported());
+    } catch {
+      setPrinterSupported(false);
+    }
   }, [isPrinterVisible]);
+
+  useEffect(() => {
+    setSelectedPrinter(printService.getSelectedPrinter());
+  }, []);
 
   const getReportRange = () => {
     const now = Date.now();
@@ -260,6 +268,7 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <ScreenHeader />
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
       </View>
@@ -726,7 +735,7 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {!printService.isPrinterSupported() && (
+          {printerSupported === false && (
             <View style={styles.printerNote}>
               <Text style={styles.printerNoteText}>
                 Printer setup requires a custom dev build. Expo Go cannot access Bluetooth SPP.

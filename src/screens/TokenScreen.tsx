@@ -20,7 +20,8 @@ import ReceiptView from '../components/common/ReceiptView';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { printService } from '../services/printService';
 import { settingsService } from '../services/settingsService';
-import CategoryFilter from '../components/common/CategoryFilter';
+import { CategoryDropdownFilter } from '../components/common/CategoryDropdown';
+import ScreenHeader from '../components/common/ScreenHeader';
 import ProductCard from '../components/common/ProductCard';
 import FloatingCartButton from '../components/common/FloatingCartButton';
 import CartBottomSheet from '../components/common/CartBottomSheet';
@@ -212,6 +213,7 @@ const TokenScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <ScreenHeader />
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Token Orders</Text>
@@ -219,7 +221,7 @@ const TokenScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={styles.tabContainer}>
+      {/* <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'checkout' && styles.tabButtonActive]}
           onPress={() => setActiveTab('checkout')}
@@ -236,15 +238,17 @@ const TokenScreen: React.FC = () => {
             Orders
           </Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {activeTab === 'checkout' ? (
         <View style={styles.checkoutContainer}>
-          <CategoryFilter
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
+          <View style={styles.categoryRow}>
+            <CategoryDropdownFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+          </View>
           <FlatList
             data={filteredProducts}
             renderItem={({ item }) => (
@@ -413,6 +417,13 @@ const styles = StyleSheet.create({
   },
   checkoutContainer: {
     flex: 1,
+  },
+  categoryRow: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   ordersContainer: {
     flex: 1,

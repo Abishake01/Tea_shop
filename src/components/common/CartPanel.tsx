@@ -113,10 +113,10 @@ const CartPanel: React.FC<CartPanelProps> = ({ onCheckout }) => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    maxHeight: '100%',
   },
   emptyContainer: {
     padding: spacing.md,
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   itemsContainer: {
-    maxHeight: 110,
+    flex: 1,
     padding: spacing.sm,
   },
   item: {

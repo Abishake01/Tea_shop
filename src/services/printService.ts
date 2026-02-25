@@ -91,7 +91,7 @@ const formatOrderText = (order: Order, shopName: string, currency: string): stri
 const getEscPosModule = () => {
   try {
     return require('react-native-bluetooth-escpos-printer');
-  } catch {
+  } catch (err) {
     return null;
   }
 };

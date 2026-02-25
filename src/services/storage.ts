@@ -145,5 +145,6 @@ export const StorageKeys = {
   SETTINGS: 'settings',
   TOKEN_COUNTER: 'tokenCounter',
   PRINTER_ADDRESS: 'printerAddress',
+  RECENT_CATEGORIES: 'recentCategories',
 } as const;
 
