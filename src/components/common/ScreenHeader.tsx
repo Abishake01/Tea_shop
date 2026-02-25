@@ -1,25 +1,25 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing } from '../../theme';
+import { View, StyleSheet, Platform, StatusBar } from 'react-native';
+import { colors } from '../../theme';
 
 interface ScreenHeaderProps {
   /** Optional extra height. Default gives a compact bar. */
   height?: number;
 }
 
-const DEFAULT_HEADER_HEIGHT = 32;
+const DEFAULT_HEADER_HEIGHT = 72;
+const STATUS_BAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0;
 
 const ScreenHeader: React.FC<ScreenHeaderProps> = ({ height = DEFAULT_HEADER_HEIGHT }) => {
-  const insets = useSafeAreaInsets();
+  const top = Platform.OS === 'ios' ? 20 : STATUS_BAR_HEIGHT;
 
   return (
     <View
       style={[
         styles.header,
         {
-          paddingTop: insets.top,
-          height: (height || DEFAULT_HEADER_HEIGHT) + insets.top,
+          paddingTop: top,
+          height: (height || DEFAULT_HEADER_HEIGHT) + top,
         },
       ]}
     />
@@ -30,8 +30,8 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     backgroundColor: colors.primary,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
 });
 
