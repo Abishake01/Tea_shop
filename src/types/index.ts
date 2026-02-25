@@ -77,5 +77,6 @@ export interface Settings {
   defaultTaxRate: number;
   shopName: string;
   autoPrintAfterCheckout: boolean;
+  tokenPrintMode: 'single' | 'multi';
 }
 

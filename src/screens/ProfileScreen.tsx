@@ -22,6 +22,7 @@ import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters'
 import { printService } from '../services/printService';
 import ScreenHeader from '../components/common/ScreenHeader';
 import ReceiptView from '../components/common/ReceiptView';
+import TokenTicket from '../components/common/TokenTicket';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
@@ -450,6 +451,47 @@ const ProfileScreen: React.FC = () => {
                   setSettings({ ...settings, autoPrintAfterCheckout: value })
                 }
               />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Token print mode</Text>
+              <View style={styles.toggleRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    settings.tokenPrintMode === 'single' && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setSettings({ ...settings, tokenPrintMode: 'single' })}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      settings.tokenPrintMode === 'single' && styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    Single token
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    settings.tokenPrintMode === 'multi' && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setSettings({ ...settings, tokenPrintMode: 'multi' })}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      settings.tokenPrintMode === 'multi' && styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    Multi token
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.helperText}>
+                Single = one token with all items. Multi = one token per item selected.
+              </Text>
             </View>
 
             <TouchableOpacity style={styles.saveButton} onPress={handleUpdateSettings}>
@@ -934,10 +976,14 @@ const ProfileScreen: React.FC = () => {
           </View>
           {selectedOrder && (
             <>
-              <ReceiptView
-                order={selectedOrder}
-                printerStatus={printService.getPrinterStatusLabel()}
-              />
+              {selectedOrder.tokenNumber != null ? (
+                <TokenTicket order={selectedOrder} mode={settings.tokenPrintMode} />
+              ) : (
+                <ReceiptView
+                  order={selectedOrder}
+                  printerStatus={printService.getPrinterStatusLabel()}
+                />
+              )}
               {selectedOrder.tokenNumber != null && selectedOrder.status !== 'completed' && (
                 <View style={styles.receiptStatusActions}>
                   {selectedOrder.status === 'preparing' && (
@@ -1115,6 +1161,33 @@ const styles = StyleSheet.create({
   helperText: {
     ...typography.caption,
     color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  toggleButtonText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  toggleButtonTextActive: {
+    color: colors.surface,
   },
   input: {
     backgroundColor: colors.surface,

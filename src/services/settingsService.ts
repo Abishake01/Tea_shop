@@ -6,12 +6,18 @@ const DEFAULT_SETTINGS: Settings = {
   defaultTaxRate: 0,
   shopName: 'Tea & Juice Shop',
   autoPrintAfterCheckout: false,
+  tokenPrintMode: 'single',
 };
 
 export const settingsService = {
   getSettings: (): Settings => {
-    const settings = Storage.getObject<Settings>(StorageKeys.SETTINGS);
-    return settings || DEFAULT_SETTINGS;
+    const settings = Storage.getObject<Settings>(StorageKeys.SETTINGS) || DEFAULT_SETTINGS;
+    // Backfill newly added fields to keep older stored settings compatible
+    return {
+      ...DEFAULT_SETTINGS,
+      ...settings,
+      tokenPrintMode: settings?.tokenPrintMode || 'single',
+    };
   },
 
   updateSettings: (updates: Partial<Settings>): Settings => {

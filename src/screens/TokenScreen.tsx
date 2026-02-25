@@ -14,11 +14,11 @@ import { useProducts } from '../context/ProductContext';
 import { Order } from '../types';
 import { orderService } from '../services/orderService';
 import { colors, spacing, typography } from '../theme';
-import ReceiptView from '../components/common/ReceiptView';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { printService } from '../services/printService';
 import { settingsService } from '../services/settingsService';
 import { CategoryDropdownFilter } from '../components/common/CategoryDropdown';
+import TokenTicket from '../components/common/TokenTicket';
 import ScreenHeader from '../components/common/ScreenHeader';
 import ProductCard from '../components/common/ProductCard';
 import FloatingCartButton from '../components/common/FloatingCartButton';
@@ -35,12 +35,14 @@ const TokenScreen: React.FC = () => {
   const [isReceiptVisible, setIsReceiptVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [settings, setSettings] = useState(settingsService.getSettings());
   const navigation = useNavigation<BottomTabNavigationProp<BottomTabParamList, 'Token'>>();
   const route = useRoute<RouteProp<BottomTabParamList, 'Token'>>();
 
   useFocusEffect(
     React.useCallback(() => {
       refreshAll();
+      setSettings(settingsService.getSettings());
       const receiptId = route.params?.openReceiptId;
       if (receiptId) {
         const order = orderService.getOrderById(receiptId);
@@ -144,9 +146,9 @@ const TokenScreen: React.FC = () => {
             </View>
           </View>
           {selectedOrder && (
-            <ReceiptView
+            <TokenTicket
               order={selectedOrder}
-              printerStatus={printService.getPrinterStatusLabel()}
+              mode={settings.tokenPrintMode}
             />
           )}
         </View>
