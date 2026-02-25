@@ -14,12 +14,14 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
 import { settingsService } from '../services/settingsService';
-import { User, Settings, SalesReport } from '../types';
+import { orderService } from '../services/orderService';
+import { User, Settings, SalesReport, Order } from '../types';
 import { colors, spacing, typography } from '../theme';
 import { reportService } from '../services/reportService';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
 import { printService } from '../services/printService';
 import ScreenHeader from '../components/common/ScreenHeader';
+import ReceiptView from '../components/common/ReceiptView';
 
 const ProfileScreen: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
@@ -48,6 +50,10 @@ const ProfileScreen: React.FC = () => {
     name: '',
     password: '',
   });
+  const [isOrdersHistoryVisible, setIsOrdersHistoryVisible] = useState(false);
+  const [ordersHistoryTab, setOrdersHistoryTab] = useState<'billing' | 'token'>('billing');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isReceiptVisible, setIsReceiptVisible] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -266,6 +272,43 @@ const ProfileScreen: React.FC = () => {
     );
   };
 
+  const billingOrders = orderService.getBillingOrders().sort((a, b) => b.timestamp - a.timestamp);
+  const tokenOrders = orderService.getTokenOrders().sort((a, b) => (b.tokenNumber ?? 0) - (a.tokenNumber ?? 0));
+
+  const handleViewOrderReceipt = (order: Order) => {
+    setSelectedOrder(order);
+    setIsReceiptVisible(true);
+  };
+
+  const handlePrintOrder = async () => {
+    if (!selectedOrder) return;
+    const result = await printService.printOrder(selectedOrder);
+    if (!result.success && result.message) {
+      Alert.alert('Print Not Available', result.message);
+    }
+  };
+
+  const handleUpdateOrderStatus = (orderId: string, status: 'preparing' | 'ready' | 'completed') => {
+    const updated = orderService.updateOrderStatus(orderId, status);
+    if (updated) setSelectedOrder(updated);
+  };
+
+  const getTokenStatusColor = (status?: string) => {
+    switch (status) {
+      case 'ready': return colors.success;
+      case 'completed': return colors.textSecondary;
+      default: return colors.accent;
+    }
+  };
+
+  const getTokenStatusText = (status?: string) => {
+    switch (status) {
+      case 'ready': return 'Ready';
+      case 'completed': return 'Completed';
+      default: return 'Preparing';
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <ScreenHeader title="Profile" />
@@ -295,6 +338,16 @@ const ProfileScreen: React.FC = () => {
               onPress={() => setIsReportsVisible(true)}
             >
               <Text style={styles.menuItemText}>Reports</Text>
+              <Text style={styles.menuItemArrow}>›</Text>
+            </TouchableOpacity>
+          )}
+
+          {isAdmin && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setIsOrdersHistoryVisible(true)}
+            >
+              <Text style={styles.menuItemText}>Orders History</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
           )}
@@ -767,6 +820,148 @@ const ProfileScreen: React.FC = () => {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Orders History Modal */}
+      <Modal
+        visible={isOrdersHistoryVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsOrdersHistoryVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Orders History</Text>
+            <TouchableOpacity onPress={() => setIsOrdersHistoryVisible(false)}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.reportsTabContainer}>
+            <TouchableOpacity
+              style={[
+                styles.reportsTab,
+                ordersHistoryTab === 'billing' && styles.reportsTabActive,
+              ]}
+              onPress={() => setOrdersHistoryTab('billing')}
+            >
+              <Text
+                style={[
+                  styles.reportsTabText,
+                  ordersHistoryTab === 'billing' && styles.reportsTabTextActive,
+                ]}
+              >
+                Billing
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.reportsTab,
+                ordersHistoryTab === 'token' && styles.reportsTabActive,
+              ]}
+              onPress={() => setOrdersHistoryTab('token')}
+            >
+              <Text
+                style={[
+                  styles.reportsTabText,
+                  ordersHistoryTab === 'token' && styles.reportsTabTextActive,
+                ]}
+              >
+                Token
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={ordersHistoryTab === 'billing' ? billingOrders : tokenOrders}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.modalContent}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  {ordersHistoryTab === 'billing' ? 'No billing orders yet' : 'No token orders yet'}
+                </Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.orderHistoryCard}
+                onPress={() => handleViewOrderReceipt(item)}
+              >
+                {ordersHistoryTab === 'token' && item.tokenNumber != null && (
+                  <View style={styles.orderHistoryRow}>
+                    <Text style={styles.orderHistoryToken}>Token #{item.tokenNumber}</Text>
+                    <View style={[styles.orderHistoryStatusBadge, { backgroundColor: getTokenStatusColor(item.status) }]}>
+                      <Text style={styles.orderHistoryStatusText}>{getTokenStatusText(item.status)}</Text>
+                    </View>
+                  </View>
+                )}
+                {ordersHistoryTab === 'billing' && (
+                  <Text style={styles.orderHistoryId}>Order #{item.id.split('_')[1]?.slice(0, 8) ?? item.id}</Text>
+                )}
+                <View style={styles.orderHistoryRow}>
+                  <Text style={styles.orderHistoryDate}>{formatDateTime(item.timestamp)}</Text>
+                  <Text style={styles.orderHistoryTotal}>{formatCurrency(item.total)}</Text>
+                </View>
+                <Text style={styles.orderHistoryItems}>
+                  {item.items.length} item{item.items.length !== 1 ? 's' : ''}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
+
+      {/* Order Receipt Modal */}
+      <Modal
+        visible={isReceiptVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsReceiptVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {selectedOrder?.tokenNumber != null ? 'Token Receipt' : 'Receipt'}
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={handlePrintOrder}>
+                <Text style={styles.printButton}>Print</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setIsReceiptVisible(false)}>
+                <Text style={styles.closeButton}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {selectedOrder && (
+            <>
+              <ReceiptView
+                order={selectedOrder}
+                printerStatus={printService.getPrinterStatusLabel()}
+              />
+              {selectedOrder.tokenNumber != null && selectedOrder.status !== 'completed' && (
+                <View style={styles.receiptStatusActions}>
+                  {selectedOrder.status === 'preparing' && (
+                    <TouchableOpacity
+                      style={[styles.receiptStatusButton, { backgroundColor: colors.success }]}
+                      onPress={() => handleUpdateOrderStatus(selectedOrder.id, 'ready')}
+                    >
+                      <Text style={styles.receiptStatusButtonText}>Mark Ready</Text>
+                    </TouchableOpacity>
+                  )}
+                  {selectedOrder.status === 'ready' && (
+                    <TouchableOpacity
+                      style={[styles.receiptStatusButton, { backgroundColor: colors.textSecondary }]}
+                      onPress={() => handleUpdateOrderStatus(selectedOrder.id, 'completed')}
+                    >
+                      <Text style={styles.receiptStatusButtonText}>Mark Completed</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -886,6 +1081,16 @@ const styles = StyleSheet.create({
   closeButton: {
     ...typography.body,
     color: colors.primary,
+    fontWeight: '600',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  printButton: {
+    ...typography.body,
+    color: colors.accent,
     fontWeight: '600',
   },
   modalContent: {
@@ -1183,6 +1388,69 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  orderHistoryCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    marginHorizontal: spacing.lg,
+  },
+  orderHistoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  orderHistoryToken: {
+    ...typography.h3,
+    color: colors.accent,
+  },
+  orderHistoryStatusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
+  },
+  orderHistoryStatusText: {
+    ...typography.caption,
+    color: colors.surface,
+    fontWeight: '600',
+  },
+  orderHistoryId: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  orderHistoryDate: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  orderHistoryTotal: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  orderHistoryItems: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  receiptStatusActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  receiptStatusButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  receiptStatusButtonText: {
+    ...typography.button,
+    color: colors.surface,
   },
 });
 

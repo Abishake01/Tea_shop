@@ -180,10 +180,6 @@ const printEscPos = async (text: string): Promise<boolean> => {
 
 export const printService = {
   getPrinterStatusLabel: (): string => {
-    const escpos = getEscPosModule();
-    if (!escpos) {
-      return 'Printer: Library not available';
-    }
     const selectedAddress = Storage.getString(StorageKeys.PRINTER_ADDRESS);
     if (!selectedAddress) {
       return 'Printer: Not connected';
@@ -192,7 +188,11 @@ export const printService = {
   },
 
   isPrinterSupported: (): boolean => {
-    return getEscPosModule() !== null;
+    try {
+      return getEscPosModule() !== null;
+    } catch {
+      return false;
+    }
   },
 
   getSelectedPrinter: (): string | undefined => {
