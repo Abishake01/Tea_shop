@@ -2,7 +2,7 @@ import { Order } from '../types';
 import { settingsService } from './settingsService';
 import { Storage, StorageKeys } from './storage';
 import { formatCurrency } from '../utils/formatters';
-import { Platform, PermissionsAndroid } from 'react-native';
+import { Platform, PermissionsAndroid, NativeModules } from 'react-native';
 
 type PrintResult = {
   success: boolean;
@@ -89,9 +89,19 @@ const formatOrderText = (order: Order, shopName: string, currency: string): stri
 };
 
 const getEscPosModule = () => {
+  // Guard: avoid requiring if native module isn't installed (prevents crashes in Expo/unsupported builds)
+  if (Platform.OS !== 'android') return null;
+  const hasNative =
+    (NativeModules as any)?.BluetoothEscposPrinter ||
+    (NativeModules as any)?.BluetoothManager;
+  if (!hasNative) return null;
+
   try {
-    return require('react-native-bluetooth-escpos-printer');
+    const mod = require('react-native-bluetooth-escpos-printer');
+    if (!mod || typeof mod !== 'object') return null;
+    return mod;
   } catch (err) {
+    console.warn('[PrintService] ESC/POS module not available', err);
     return null;
   }
 };

@@ -70,8 +70,10 @@ const ProfileScreen: React.FC = () => {
   useEffect(() => {
     if (!isPrinterVisible) return;
     try {
-      setPrinterSupported(printService.isPrinterSupported());
-    } catch {
+      const supported = printService.isPrinterSupported();
+      setPrinterSupported(!!supported);
+    } catch (err) {
+      console.warn('[Printer] module not available', err);
       setPrinterSupported(false);
     }
   }, [isPrinterVisible]);
@@ -393,7 +395,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isSettingsModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsSettingsModalVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -404,7 +406,7 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent}>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Shop Name</Text>
               <TextInput
@@ -505,7 +507,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isChangePasswordModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsChangePasswordModalVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -516,7 +518,7 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent}>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Current Password</Text>
               <TextInput
@@ -561,7 +563,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isUserManagementVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsUserManagementVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -572,7 +574,7 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { flex: 1 }]}>
             <TouchableOpacity style={styles.addButton} onPress={handleAddStaff}>
               <Text style={styles.addButtonText}>+ Add Staff User</Text>
             </TouchableOpacity>
@@ -608,7 +610,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isAddStaffModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsAddStaffModalVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -619,7 +621,7 @@ const ProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent}>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Username *</Text>
               <TextInput
@@ -663,7 +665,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isReportsVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsReportsVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -731,7 +733,11 @@ const ProfileScreen: React.FC = () => {
             ))}
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView
+            style={[styles.modalScroll, { flex: 1 }]}
+            contentContainerStyle={styles.modalContent}
+            showsVerticalScrollIndicator
+          >
             {report ? (
               <>
                 <View style={styles.reportsSummaryContainer}>
@@ -805,7 +811,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isPrinterVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsPrinterVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -835,7 +841,11 @@ const ProfileScreen: React.FC = () => {
             </View>
           )}
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView
+            style={[styles.modalScroll, { flex: 1 }]}
+            contentContainerStyle={styles.modalContent}
+            showsVerticalScrollIndicator
+          >
             {printers.length > 0 ? (
               printers.map(device => (
                 <TouchableOpacity
@@ -867,7 +877,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isOrdersHistoryVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsOrdersHistoryVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -914,9 +924,12 @@ const ProfileScreen: React.FC = () => {
           </View>
 
           <FlatList
+            style={styles.modalFlatList}
             data={ordersHistoryTab === 'billing' ? billingOrders : tokenOrders}
             keyExtractor={item => item.id}
-            contentContainerStyle={styles.modalContent}
+            contentContainerStyle={[styles.modalContent, { paddingBottom: spacing.xl }]}
+            showsVerticalScrollIndicator
+            scrollEnabled
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
@@ -957,7 +970,7 @@ const ProfileScreen: React.FC = () => {
       <Modal
         visible={isReceiptVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsReceiptVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -1142,7 +1155,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalContent: {
-    flex: 1,
     padding: spacing.lg,
   },
   formGroup: {
@@ -1530,6 +1542,12 @@ const styles = StyleSheet.create({
   ticketScroll: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
+  },
+  modalFlatList: {
+    flex: 1,
+  },
+  modalScroll: {
+    flex: 1,
   },
 });
 
