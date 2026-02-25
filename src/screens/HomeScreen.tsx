@@ -4,6 +4,7 @@ import { useProducts } from '../context/ProductContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { orderService } from '../services/orderService';
+import { settingsService } from '../services/settingsService';
 import { colors, spacing } from '../theme';
 import ProductCard from '../components/common/ProductCard';
 import { CategoryDropdownFilter } from '../components/common/CategoryDropdown';
@@ -69,9 +70,11 @@ const HomeScreen: React.FC = () => {
     );
   };
 
+  const shopName = settingsService.getSettings().shopName || 'Tea & Juice Shop';
+
   return (
     <View style={styles.container}>
-      <ScreenHeader />
+      <ScreenHeader title={shopName} />
       <View style={styles.categoryRow}>
         <CategoryDropdownFilter
           categories={categories}

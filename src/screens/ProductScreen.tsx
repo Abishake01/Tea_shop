@@ -230,21 +230,17 @@ const ProductScreen: React.FC = () => {
   return (
     <ProtectedRoute requireAdmin>
       <View style={styles.container}>
-      <ScreenHeader />
-      <View style={styles.header}>
-        <Text style={styles.title}>Products</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.reportsButton}
-            onPress={() => setIsReportsVisible(true)}
-          >
-            <Text style={styles.reportsButtonText}>Reports</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddProduct}>
-            <Text style={styles.addButtonText}>+ Add Product</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Product"
+        rightElement={
+          <>
+         
+            <TouchableOpacity style={styles.headerActionButton} onPress={handleAddProduct}>
+              <Text style={styles.headerActionButtonText}>+ Add Product</Text>
+            </TouchableOpacity>
+          </>
+        }
+      />
 
       <FlatList
         data={products}
@@ -407,43 +403,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    marginTop: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    ...typography.h1,
-    color: colors.text,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  reportsButton: {
-    backgroundColor: colors.accent,
+  headerActionButton: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
   },
-  reportsButtonText: {
+  headerActionButtonText: {
     ...typography.button,
     color: colors.surface,
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    ...typography.button,
-    color: colors.surface,
+    fontSize: 14,
   },
   reportsModalContainer: {
     flex: 1,

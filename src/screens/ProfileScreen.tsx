@@ -268,10 +268,7 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <ScreenHeader />
-      <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-      </View>
+      <ScreenHeader title="Profile" />
 
       <View style={styles.content}>
         <View style={styles.profileCard}>

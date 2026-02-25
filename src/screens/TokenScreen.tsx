@@ -213,13 +213,7 @@ const TokenScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader />
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Token Orders</Text>
-          <Text style={styles.currentToken}>Current Token: #{currentToken}</Text>
-        </View>
-      </View>
+      <ScreenHeader title="Token" />
 
       {/* <View style={styles.tabContainer}>
         <TouchableOpacity

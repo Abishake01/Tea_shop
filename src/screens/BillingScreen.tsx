@@ -132,10 +132,7 @@ const BillingScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader />
-      <View style={styles.header}>
-        <Text style={styles.title}>Billing</Text>
-      </View>
+      <ScreenHeader title="Billing" />
 
       {/* <View style={styles.tabContainer}>
         <TouchableOpacity
