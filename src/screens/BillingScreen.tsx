@@ -61,6 +61,7 @@ const BillingScreen: React.FC = () => {
 
     const newOrder = orderService.createOrder(items, user.id);
     clearCart();
+    setIsCartOpen(false);
     setSelectedOrder(newOrder);
     setIsReceiptVisible(true);
 
@@ -137,7 +138,7 @@ const BillingScreen: React.FC = () => {
               <TouchableOpacity onPress={handlePrint}>
                 <Text style={styles.printButton}>Print</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setIsReceiptVisible(false)}>
+              <TouchableOpacity onPress={() => { setIsReceiptVisible(false); setIsCartOpen(false); }}>
                 <Text style={styles.closeButton}>Close</Text>
               </TouchableOpacity>
             </View>

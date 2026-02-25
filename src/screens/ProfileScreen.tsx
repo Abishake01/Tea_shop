@@ -977,7 +977,9 @@ const ProfileScreen: React.FC = () => {
           {selectedOrder && (
             <>
               {selectedOrder.tokenNumber != null ? (
-                <TokenTicket order={selectedOrder} mode={settings.tokenPrintMode} />
+                <ScrollView contentContainerStyle={styles.ticketScroll}>
+                  <TokenTicket order={selectedOrder} mode={settings.tokenPrintMode} />
+                </ScrollView>
               ) : (
                 <ReceiptView
                   order={selectedOrder}
@@ -1524,6 +1526,10 @@ const styles = StyleSheet.create({
   receiptStatusButtonText: {
     ...typography.button,
     color: colors.surface,
+  },
+  ticketScroll: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
 });
 

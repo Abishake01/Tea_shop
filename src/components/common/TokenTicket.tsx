@@ -102,10 +102,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   itemName: {
-    ...typography.h2,
+    ...typography.h4,
     color: colors.text,
     marginBottom: spacing.xs,
     textAlign: 'center',
+    fontWeight: '700',
   },
   tokenLabel: {
     ...typography.bodySmall,

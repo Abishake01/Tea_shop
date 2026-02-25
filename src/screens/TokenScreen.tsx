@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -64,6 +65,7 @@ const TokenScreen: React.FC = () => {
     const tokenNumber = orderService.getNextTokenNumber();
     const newOrder = orderService.createOrder(items, user.id, tokenNumber);
     clearCart();
+    setIsCartOpen(false);
     setSelectedOrder(newOrder);
     setIsReceiptVisible(true);
 
@@ -140,16 +142,18 @@ const TokenScreen: React.FC = () => {
               <TouchableOpacity onPress={handlePrint}>
                 <Text style={styles.printButton}>Print</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setIsReceiptVisible(false)}>
+              <TouchableOpacity onPress={() => { setIsReceiptVisible(false); setIsCartOpen(false); }}>
                 <Text style={styles.closeButton}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
           {selectedOrder && (
-            <TokenTicket
-              order={selectedOrder}
-              mode={settings.tokenPrintMode}
-            />
+            <ScrollView contentContainerStyle={styles.ticketScroll}>
+              <TokenTicket
+                order={selectedOrder}
+                mode={settings.tokenPrintMode}
+              />
+            </ScrollView>
           )}
         </View>
       </Modal>
@@ -248,6 +252,10 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
+  },
+  ticketScroll: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
 });
 
