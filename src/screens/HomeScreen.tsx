@@ -7,7 +7,7 @@ import { orderService } from '../services/orderService';
 import { settingsService } from '../services/settingsService';
 import { colors, spacing } from '../theme';
 import ProductCard from '../components/common/ProductCard';
-import { CategoryDropdownFilter } from '../components/common/CategoryDropdown';
+import { CategorySlider } from '../components/common/CategorySlider';
 import ScreenHeader from '../components/common/ScreenHeader';
 import FloatingCartButton from '../components/common/FloatingCartButton';
 import CartBottomSheet from '../components/common/CartBottomSheet';
@@ -60,8 +60,7 @@ const HomeScreen: React.FC = () => {
         {
           text: 'Token Order',
           onPress: () => {
-            const tokenNumber = orderService.getNextTokenNumber();
-            const newOrder = orderService.createOrder(items, user.id, tokenNumber);
+            const newOrder = orderService.createTokenOrder(items, user.id);
             clearCart();
             navigation.navigate('Token', { openReceiptId: newOrder.id });
           },
@@ -76,7 +75,7 @@ const HomeScreen: React.FC = () => {
     <View style={styles.container}>
       <ScreenHeader title={shopName} />
       <View style={styles.categoryRow}>
-        <CategoryDropdownFilter
+        <CategorySlider
           categories={categories}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}

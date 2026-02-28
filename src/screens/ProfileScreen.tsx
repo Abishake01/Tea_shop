@@ -10,7 +10,9 @@ import {
   Alert,
   FlatList,
   Switch,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
 import { settingsService } from '../services/settingsService';
@@ -33,7 +35,15 @@ const ProfileScreen: React.FC = () => {
   const [isAddStaffModalVisible, setIsAddStaffModalVisible] = useState(false);
   const [isReportsVisible, setIsReportsVisible] = useState(false);
   const [reportTab, setReportTab] = useState<'billing' | 'token'>('billing');
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'custom'>('today');
+  const [customStartDate, setCustomStartDate] = useState<number>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  });
+  const [customEndDate, setCustomEndDate] = useState<number>(() => Date.now());
+  const [customDatePickerMode, setCustomDatePickerMode] = useState<'from' | 'to' | null>(null);
   const [report, setReport] = useState<SalesReport | null>(null);
   const [isPrinterVisible, setIsPrinterVisible] = useState(false);
   const [printers, setPrinters] = useState<Array<{ name: string; address: string }>>([]);
@@ -65,7 +75,7 @@ const ProfileScreen: React.FC = () => {
   useEffect(() => {
     if (!isReportsVisible) return;
     loadReport();
-  }, [isReportsVisible, reportTab, selectedPeriod]);
+  }, [isReportsVisible, reportTab, selectedPeriod, customStartDate, customEndDate]);
 
   useEffect(() => {
     if (!isPrinterVisible) return;
@@ -84,6 +94,9 @@ const ProfileScreen: React.FC = () => {
 
   const getReportRange = () => {
     const now = Date.now();
+    if (selectedPeriod === 'custom') {
+      return { startDate: customStartDate, endDate: customEndDate };
+    }
     let startDate: number;
 
     switch (selectedPeriod) {
@@ -107,6 +120,14 @@ const ProfileScreen: React.FC = () => {
     return { startDate, endDate: now };
   };
 
+  const applyCustomRange = () => {
+    if (customStartDate >= customEndDate) {
+      Alert.alert('Invalid range', 'From date must be before To date.');
+      return;
+    }
+    loadReport();
+  };
+
   const loadReport = () => {
     const { startDate, endDate } = getReportRange();
     const nextReport = reportService.getReport(reportTab, startDate, endDate);
@@ -119,7 +140,8 @@ const ProfileScreen: React.FC = () => {
       await reportService.exportCsv(reportTab, startDate, endDate);
       Alert.alert('Export Complete', 'CSV report saved and ready to share.');
     } catch (error) {
-      Alert.alert('Export Failed', 'Unable to export CSV report.');
+      const message = error instanceof Error ? error.message : 'Unable to export CSV report.';
+      Alert.alert('Export Failed', message);
     }
   };
 
@@ -712,7 +734,7 @@ const ProfileScreen: React.FC = () => {
           </View>
 
           <View style={styles.reportsPeriodContainer}>
-            {(['today', 'week', 'month'] as const).map(period => (
+            {(['today', 'week', 'month', 'custom'] as const).map(period => (
               <TouchableOpacity
                 key={period}
                 style={[
@@ -732,6 +754,95 @@ const ProfileScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
           </View>
+
+          {selectedPeriod === 'custom' && (
+            <View style={styles.customRangeRow}>
+              <TouchableOpacity
+                style={styles.customRangeDateButton}
+                onPress={() => setCustomDatePickerMode('from')}
+              >
+                <Text style={styles.customRangeDateLabel}>From</Text>
+                <Text style={styles.customRangeDateValue}>{formatDate(customStartDate)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.customRangeDateButton}
+                onPress={() => setCustomDatePickerMode('to')}
+              >
+                <Text style={styles.customRangeDateLabel}>To</Text>
+                <Text style={styles.customRangeDateValue}>{formatDate(customEndDate)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.customRangeApplyButton} onPress={applyCustomRange}>
+                <Text style={styles.customRangeApplyText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {customDatePickerMode !== null && (
+            <Modal transparent animationType="fade" visible>
+              <TouchableOpacity
+                style={styles.datePickerBackdrop}
+                activeOpacity={1}
+                onPress={() => setCustomDatePickerMode(null)}
+              >
+                <View style={styles.datePickerContainer}>
+                  <View style={styles.datePickerHeader}>
+                    <Text style={styles.datePickerTitle}>
+                      Choose {customDatePickerMode === 'from' ? 'start' : 'end'} date
+                    </Text>
+                    <TouchableOpacity onPress={() => setCustomDatePickerMode(null)}>
+                      <Text style={styles.closeButton}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={
+                      customDatePickerMode === 'from'
+                        ? new Date(customStartDate)
+                        : new Date(customEndDate)
+                    }
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                    onChange={(event, date) => {
+                      if (Platform.OS === 'android' && event.type === 'dismissed') {
+                        setCustomDatePickerMode(null);
+                        return;
+                      }
+                      if (date) {
+                        const ts = date.getTime();
+                        if (customDatePickerMode === 'from') {
+                          setCustomStartDate(ts);
+                          if (ts >= customEndDate) {
+                            const end = new Date(ts);
+                            end.setHours(23, 59, 59, 999);
+                            setCustomEndDate(end.getTime());
+                          }
+                        } else {
+                          setCustomEndDate(ts);
+                          if (ts <= customStartDate) {
+                            const start = new Date(ts);
+                            start.setHours(0, 0, 0, 0);
+                            setCustomStartDate(start.getTime());
+                          }
+                        }
+                        setCustomDatePickerMode(null);
+                        loadReport();
+                      }
+                    }}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      style={styles.customRangeApplyButton}
+                      onPress={() => {
+                        setCustomDatePickerMode(null);
+                        loadReport();
+                      }}
+                    >
+                      <Text style={styles.customRangeApplyText}>Done</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          )}
 
           <ScrollView
             style={[styles.modalScroll, { flex: 1 }]}
@@ -1327,6 +1438,81 @@ const styles = StyleSheet.create({
   },
   reportsPeriodTextActive: {
     color: colors.surface,
+  },
+  customRangeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
+  },
+  customRangeDateButton: {
+    flex: 1,
+    minWidth: 100,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  customRangeDateLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  customRangeDateValue: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  customRangeInput: {
+    flex: 1,
+    minWidth: 120,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    ...typography.body,
+    color: colors.text,
+  },
+  customRangeApplyButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  customRangeApplyText: {
+    ...typography.bodySmall,
+    color: colors.surface,
+    fontWeight: '600',
+  },
+  datePickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  datePickerContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    minWidth: 280,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  datePickerTitle: {
+    ...typography.h3,
+    color: colors.text,
   },
   reportsSummaryContainer: {
     flexDirection: 'row',

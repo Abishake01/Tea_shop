@@ -55,6 +55,11 @@ const formatMoney = (amount: number, currency: string): string => {
   }
 };
 
+const padToken = (tokenNumber?: number) => {
+  if (tokenNumber == null) return '---';
+  return tokenNumber.toString().padStart(3, '0');
+};
+
 const formatOrderText = (order: Order, shopName: string, currency: string): string => {
   const lines: string[] = [];
 
@@ -86,6 +91,12 @@ const formatOrderText = (order: Order, shopName: string, currency: string): stri
   lines.push(`Thank you!\n\n\n`);
 
   return lines.join('');
+};
+
+const getTokenItemLabel = (order: Order): string => {
+  // Similar to the TokenTicket preview: show item names with qty.
+  if (!order.items?.length) return '';
+  return order.items.map(item => `${item.productName} ×${item.quantity}`).join('\n');
 };
 
 const getEscPosModule = () => {
@@ -188,6 +199,47 @@ const printEscPos = async (text: string): Promise<boolean> => {
   return true;
 };
 
+const printTokenTicketEscPos = async (order: Order, shopName: string): Promise<boolean> => {
+  const escpos = getEscPosModule();
+  const printer = escpos?.BluetoothEscposPrinter;
+  if (!printer) return false;
+
+  const ALIGN = (printer as any)?.ALIGN;
+  const printerAlign = (printer as any)?.printerAlign;
+  if (typeof printerAlign === 'function' && ALIGN?.CENTER != null) {
+    await printerAlign(ALIGN.CENTER);
+  }
+
+  const itemsWithTokens = order.items.filter(i => i.tokenNumber != null);
+  const multiMode = settingsService.getSettings().tokenPrintMode === 'multi' && itemsWithTokens.length > 0;
+
+  if (multiMode && itemsWithTokens.length > 0) {
+    for (const item of itemsWithTokens) {
+      await printer.printText(`${shopName}\r\n`, { fonttype: 1 });
+      await printer.printText(`${item.productName}\r\n`, { fonttype: 1 });
+      await printer.printText(`Token No: ${padToken(item.tokenNumber)}\r\n\r\n`, { fonttype: 1 });
+      const tokenNumText = item.tokenNumber == null ? '-' : String(item.tokenNumber);
+      await printer.printText(`${tokenNumText}\r\n`, { fonttype: 1, widthtimes: 3, heigthtimes: 3 });
+      await printer.printText(`\r\nThank you!\r\n\r\n\r\n`, { fonttype: 1 });
+    }
+    return true;
+  }
+
+  const itemLabel = getTokenItemLabel(order);
+  await printer.printText(`${shopName}\r\n`, { fonttype: 1 });
+  if (itemLabel) {
+    await printer.printText(`${itemLabel}\r\n`, { fonttype: 1 });
+  }
+  const firstToken = order.tokenNumber ?? order.items.find(i => i.tokenNumber != null)?.tokenNumber;
+  await printer.printText(`Token No: ${padToken(firstToken)}\r\n\r\n`, { fonttype: 1 });
+
+  const tokenNumText = firstToken == null ? '-' : String(firstToken);
+  await printer.printText(`${tokenNumText}\r\n`, { fonttype: 1, widthtimes: 3, heigthtimes: 3 });
+
+  await printer.printText(`\r\nThank you!\r\n\r\n\r\n`, { fonttype: 1 });
+  return true;
+};
+
 export const printService = {
   getPrinterStatusLabel: (): string => {
     const selectedAddress = Storage.getString(StorageKeys.PRINTER_ADDRESS);
@@ -247,18 +299,27 @@ export const printService = {
     }
     
     const settings = settingsService.getSettings();
-    const text = formatOrderText(
-      order,
-      settings.shopName || 'Tea & Juice Shop',
-      settings.currency || 'INR'
-    );
+    const shopName = settings.shopName || 'Tea & Juice Shop';
+    const currency = settings.currency || 'INR';
 
     const selectedAddress = Storage.getString(StorageKeys.PRINTER_ADDRESS);
     const connected = await ensureConnected(selectedAddress);
     if (connected) {
-      const printed = await printEscPos(text);
-      if (printed) {
-        return { success: true };
+      const isTokenOrder =
+        order.tokenNumber !== undefined ||
+        order.items.some(item => item.tokenNumber !== undefined);
+      if (isTokenOrder) {
+        const printed = await printTokenTicketEscPos(order, shopName);
+        if (printed) return { success: true };
+
+        const firstToken = order.tokenNumber ?? order.items.find(i => i.tokenNumber != null)?.tokenNumber;
+        const fallbackText = `${shopName}\n\n${getTokenItemLabel(order)}\n\nToken No: ${padToken(firstToken)}\n\n${firstToken ?? '-'}\n\nThank you!\n\n\n`;
+        const printedFallback = await printEscPos(fallbackText);
+        if (printedFallback) return { success: true };
+      } else {
+        const text = formatOrderText(order, shopName, currency);
+        const printed = await printEscPos(text);
+        if (printed) return { success: true };
       }
     }
 

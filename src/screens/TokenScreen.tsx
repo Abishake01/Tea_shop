@@ -18,7 +18,7 @@ import { colors, spacing, typography } from '../theme';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { printService } from '../services/printService';
 import { settingsService } from '../services/settingsService';
-import { CategoryDropdownFilter } from '../components/common/CategoryDropdown';
+import { CategorySlider } from '../components/common/CategorySlider';
 import TokenTicket from '../components/common/TokenTicket';
 import ScreenHeader from '../components/common/ScreenHeader';
 import ProductCard from '../components/common/ProductCard';
@@ -62,8 +62,7 @@ const TokenScreen: React.FC = () => {
   const handleCheckout = () => {
     if (!user || items.length === 0) return;
 
-    const tokenNumber = orderService.getNextTokenNumber();
-    const newOrder = orderService.createOrder(items, user.id, tokenNumber);
+    const newOrder = orderService.createTokenOrder(items, user.id);
     clearCart();
     setIsCartOpen(false);
     setSelectedOrder(newOrder);
@@ -90,12 +89,12 @@ const TokenScreen: React.FC = () => {
 
       <View style={styles.checkoutContainer}>
         <View style={styles.categoryRow}>
-          <CategoryDropdownFilter
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-        </View>
+            <CategorySlider
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+          </View>
         <FlatList
           data={filteredProducts}
           renderItem={({ item }) => (

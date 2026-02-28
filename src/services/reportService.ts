@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Order } from '../types';
 import { orderService } from './orderService';
@@ -29,9 +29,17 @@ const toCsvValue = (value: string | number | undefined): string => {
 
 const filterOrdersByType = (orders: Order[], type: ReportType): Order[] => {
   if (type === 'token') {
-    return orders.filter(order => order.tokenNumber !== undefined);
+    return orders.filter(
+      order =>
+        order.tokenNumber !== undefined ||
+        order.items.some(item => item.tokenNumber !== undefined)
+    );
   }
-  return orders.filter(order => order.tokenNumber === undefined);
+  return orders.filter(
+    order =>
+      order.tokenNumber === undefined &&
+      !order.items.some(item => item.tokenNumber !== undefined)
+  );
 };
 
 const buildSalesReport = (orders: Order[], startDate: number, endDate: number): SalesReport => {
@@ -83,46 +91,59 @@ export const reportService = {
   },
 
   exportCsv: async (type: ReportType, startDate: number, endDate: number): Promise<string> => {
-    const orders = filterOrdersByType(orderService.getAllOrders(), type)
-      .filter(order => order.timestamp >= startDate && order.timestamp <= endDate);
+    try {
+      const dir = FileSystem.documentDirectory;
+      if (!dir) {
+        throw new Error('File system is not available. Try again or use a different device.');
+      }
 
-    const header = [
-      'orderId',
-      'tokenNumber',
-      'timestamp',
-      'subtotal',
-      'tax',
-      'total',
-      'itemsCount',
-      'userId',
-    ];
+      const orders = filterOrdersByType(orderService.getAllOrders(), type)
+        .filter(order => order.timestamp >= startDate && order.timestamp <= endDate);
 
-    const rows = orders.map(order => [
-      toCsvValue(order.id),
-      toCsvValue(order.tokenNumber),
-      toCsvValue(new Date(order.timestamp).toISOString()),
-      toCsvValue(order.subtotal),
-      toCsvValue(order.tax),
-      toCsvValue(order.total),
-      toCsvValue(order.items.length),
-      toCsvValue(order.userId),
-    ].join(','));
+      const header = [
+        'orderId',
+        'tokenNumber',
+        'timestamp',
+        'subtotal',
+        'tax',
+        'total',
+        'itemsCount',
+        'userId',
+      ];
+
+      const rows = orders.map(order => [
+        toCsvValue(order.id),
+        toCsvValue(order.tokenNumber),
+        toCsvValue(new Date(order.timestamp).toISOString()),
+        toCsvValue(order.subtotal),
+        toCsvValue(order.tax),
+        toCsvValue(order.total),
+        toCsvValue(order.items.length),
+        toCsvValue(order.userId),
+      ].join(','));
 
     const csv = [header.join(','), ...rows].join('\n');
     const fileName = `${type}-report-${Date.now()}.csv`;
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+    const fileUri = `${dir}${fileName}`;
 
     await FileSystem.writeAsStringAsync(fileUri, csv, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: 'utf8',
     });
 
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'text/csv',
-        dialogTitle: `${type.toUpperCase()} Report CSV`,
-      });
-    }
+      const sharingAvailable = await Sharing.isAvailableAsync();
+      if (sharingAvailable) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: `${type.toUpperCase()} Report CSV`,
+        });
+      } else {
+        throw new Error('Sharing is not available on this device. File was saved locally.');
+      }
 
-    return fileUri;
+      return fileUri;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      throw new Error(message);
+    }
   },
 };

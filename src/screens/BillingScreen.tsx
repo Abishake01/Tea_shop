@@ -18,7 +18,7 @@ import ReceiptView from '../components/common/ReceiptView';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { printService } from '../services/printService';
 import { settingsService } from '../services/settingsService';
-import { CategoryDropdownFilter } from '../components/common/CategoryDropdown';
+import { CategorySlider } from '../components/common/CategorySlider';
 import ScreenHeader from '../components/common/ScreenHeader';
 import ProductCard from '../components/common/ProductCard';
 import FloatingCartButton from '../components/common/FloatingCartButton';
@@ -86,12 +86,12 @@ const BillingScreen: React.FC = () => {
 
       <View style={styles.checkoutContainer}>
         <View style={styles.categoryRow}>
-          <CategoryDropdownFilter
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-        </View>
+            <CategorySlider
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+          </View>
         <FlatList
           data={filteredProducts}
           renderItem={({ item }) => (

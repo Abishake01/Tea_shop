@@ -27,6 +27,8 @@ export interface OrderItem {
   unitPrice: number;
   tax: number;
   subtotal: number;
+  tokenNumber?: number;
+  category?: string;
 }
 
 export interface Order {

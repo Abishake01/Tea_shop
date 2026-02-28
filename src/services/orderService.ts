@@ -1,5 +1,9 @@
 import { Storage, StorageKeys } from './storage';
 import { Order, OrderItem, CartItem } from '../types';
+import { productService } from './productService';
+
+const tokenCounterKey = (category: string) =>
+  `tokenCounter_${category.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
 export const orderService = {
   createOrder: (
@@ -42,6 +46,65 @@ export const orderService = {
     return newOrder;
   },
 
+  getNextTokenNumberForCategory: (category: string): number => {
+    const key = tokenCounterKey(category);
+    const current = Storage.getNumber(key) || 0;
+    const next = current + 1;
+    Storage.setNumber(key, next);
+    return next;
+  },
+
+  peekNextTokenNumberForCategory: (category: string): number => {
+    const key = tokenCounterKey(category);
+    const current = Storage.getNumber(key) || 0;
+    return current + 1;
+  },
+
+  createTokenOrder: (items: CartItem[], userId: string): Order => {
+    const orders = orderService.getAllOrders();
+    const orderItems: OrderItem[] = [];
+    let firstToken: number | undefined;
+
+    for (const cartItem of items) {
+      const product = productService.getProductById(cartItem.productId);
+      const category = product?.category ?? 'Other';
+      for (let q = 0; q < cartItem.quantity; q++) {
+        const tokenNum = orderService.getNextTokenNumberForCategory(category);
+        if (firstToken === undefined) firstToken = tokenNum;
+        orderItems.push({
+          productId: cartItem.productId,
+          productName: cartItem.productName,
+          quantity: 1,
+          unitPrice: cartItem.unitPrice,
+          tax: cartItem.tax,
+          subtotal: cartItem.unitPrice * (1 + cartItem.tax / 100),
+          tokenNumber: tokenNum,
+          category,
+        });
+      }
+    }
+
+    const subtotal = orderItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+    const tax = orderItems.reduce((sum, i) => sum + i.unitPrice * i.quantity * (i.tax / 100), 0);
+    const total = subtotal + tax;
+
+    const newOrder: Order = {
+      id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      items: orderItems,
+      subtotal,
+      tax,
+      total,
+      tokenNumber: firstToken,
+      timestamp: Date.now(),
+      userId,
+      status: 'preparing',
+    };
+
+    orders.push(newOrder);
+    Storage.setArray(StorageKeys.ORDERS, orders);
+    return newOrder;
+  },
+
   getAllOrders: (): Order[] => {
     return Storage.getArray<Order>(StorageKeys.ORDERS);
   },
@@ -60,17 +123,29 @@ export const orderService = {
 
   getOrdersByToken: (tokenNumber: number): Order[] => {
     const orders = orderService.getAllOrders();
-    return orders.filter(order => order.tokenNumber === tokenNumber);
+    return orders.filter(
+      order =>
+        order.tokenNumber === tokenNumber ||
+        order.items.some(item => item.tokenNumber === tokenNumber)
+    );
   },
 
   getTokenOrders: (): Order[] => {
     const orders = orderService.getAllOrders();
-    return orders.filter(order => order.tokenNumber !== undefined);
+    return orders.filter(
+      order =>
+        order.tokenNumber !== undefined ||
+        order.items.some(item => item.tokenNumber !== undefined)
+    );
   },
 
   getBillingOrders: (): Order[] => {
     const orders = orderService.getAllOrders();
-    return orders.filter(order => order.tokenNumber === undefined);
+    return orders.filter(
+      order =>
+        order.tokenNumber === undefined &&
+        !order.items.some(item => item.tokenNumber !== undefined)
+    );
   },
 
   updateOrderStatus: (id: string, status: 'preparing' | 'ready' | 'completed'): Order | null => {

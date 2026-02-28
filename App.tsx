@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { ProductProvider } from './src/context/ProductContext';
 import { CartProvider } from './src/context/CartContext';
@@ -29,14 +30,16 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <ProductProvider>
-          <CartProvider>
-            <StatusBar style="auto" />
-            <AppNavigator />
-          </CartProvider>
-        </ProductProvider>
-      </AuthProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ProductProvider>
+            <CartProvider>
+              <StatusBar style="auto" />
+              <AppNavigator />
+            </CartProvider>
+          </ProductProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

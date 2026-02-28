@@ -50,14 +50,16 @@ export const TokenTicket: React.FC<TokenTicketProps> = ({ order, mode }) => {
     .join('\n');
 
   if (ticketMode === 'multi') {
-    const items = expandItemsForTokens(order.items);
+    const itemsWithTokens = order.items.some(i => i.tokenNumber != null)
+      ? order.items
+      : expandItemsForTokens(order.items);
     return (
       <View style={styles.container}>
-        {items.map((item, idx) => (
+        {itemsWithTokens.map((item, idx) => (
           <TokenCard
             key={`${item.productId}-${idx}`}
             itemLabel={item.productName}
-            tokenNumber={order.tokenNumber}
+            tokenNumber={item.tokenNumber ?? order.tokenNumber}
             shopName={shopName}
           />
         ))}
@@ -70,9 +72,10 @@ export const TokenTicket: React.FC<TokenTicketProps> = ({ order, mode }) => {
     <View style={styles.container}>
       <TokenCard itemLabel={namesWithQty} tokenNumber={order.tokenNumber} shopName={shopName} />
       <View style={styles.itemsList}>
-        {order.items.map(item => (
-          <Text key={item.productId} style={styles.itemLine}>
+        {order.items.map((item, idx) => (
+          <Text key={`${item.productId}-${idx}`} style={styles.itemLine}>
             • {item.productName} ×{item.quantity}
+            {item.tokenNumber != null ? `  Token #${item.tokenNumber}` : ''}
           </Text>
         ))}
       </View>

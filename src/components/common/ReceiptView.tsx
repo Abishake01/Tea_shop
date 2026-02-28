@@ -39,6 +39,7 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
                 <Text style={styles.itemDetails}>
                   {item.quantity} × {formatCurrency(item.unitPrice)}
                   {item.tax > 0 && ` (+${item.tax}% tax)`}
+                  {item.tokenNumber != null && ` · Token #${item.tokenNumber}`}
                 </Text>
               </View>
               <Text style={styles.itemTotal}>{formatCurrency(item.subtotal)}</Text>

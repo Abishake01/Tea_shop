@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
 import BillingScreen from '../screens/BillingScreen';
@@ -21,6 +22,7 @@ const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 export const BottomTabNavigator: React.FC = () => {
   const { isAdmin } = useAuth();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -32,9 +34,9 @@ export const BottomTabNavigator: React.FC = () => {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 60,
+          paddingTop: 10,
+          paddingBottom: Math.max(12, insets.bottom) + 8,
+          height: 56 + Math.max(12, insets.bottom),
         },
         tabBarLabelStyle: {
           fontSize: 12,
