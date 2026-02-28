@@ -74,9 +74,11 @@ const styles = StyleSheet.create({
     minHeight: 32,
   },
   price: {
-    ...typography.h3,
+    ...typography.bodySmall,
+    fontSize: 18,
+    fontWeight: '600',
     color: colors.primary,
-    marginBottom: spacing.xs,
+    marginBottom: 0,
   },
   tax: {
     ...typography.caption,

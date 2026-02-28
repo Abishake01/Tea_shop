@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { useProducts } from '../context/ProductContext';
 import { useAuth } from '../context/AuthContext';
@@ -278,16 +279,6 @@ const ProductScreen: React.FC = () => {
             contentContainerStyle={styles.modalScrollContent}
             showsVerticalScrollIndicator={true}
           >
-            <TouchableOpacity style={styles.imagePicker} onPress={handlePickImage}>
-              {formData.imageUri ? (
-                <Image source={{ uri: formData.imageUri }} style={styles.previewImage} />
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <Text style={styles.imagePlaceholderText}>Tap to add image</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
             <View style={styles.formGroup}>
               <Text style={styles.label}>Product Name *</Text>
               <TextInput
@@ -300,12 +291,23 @@ const ProductScreen: React.FC = () => {
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>SKU *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter SKU"
-                value={formData.sku}
-                onChangeText={text => setFormData({ ...formData, sku: text })}
-              />
+              <View style={styles.skuImageRow}>
+                <TextInput
+                  style={styles.skuInput}
+                  placeholder="Enter SKU"
+                  value={formData.sku}
+                  onChangeText={text => setFormData({ ...formData, sku: text })}
+                />
+                <TouchableOpacity style={styles.imagePickerSquare} onPress={handlePickImage}>
+                  {formData.imageUri ? (
+                    <Image source={{ uri: formData.imageUri }} style={styles.previewImageSquare} />
+                  ) : (
+                    <View style={styles.imagePlaceholderSquare}>
+                      <Text style={styles.imagePlaceholderText}>Image</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.formGroup}>
@@ -352,22 +354,15 @@ const ProductScreen: React.FC = () => {
               />
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                formData.isActive && styles.toggleButtonActive,
-              ]}
-              onPress={() => setFormData({ ...formData, isActive: !formData.isActive })}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  formData.isActive && styles.toggleButtonTextActive,
-                ]}
-              >
-                {formData.isActive ? 'Active' : 'Inactive'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.activeRow}>
+              <Text style={styles.label}>Active</Text>
+              <Switch
+                value={formData.isActive}
+                onValueChange={value => setFormData({ ...formData, isActive: value })}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.surface}
+              />
+            </View>
 
             <TouchableOpacity style={styles.saveButton} onPress={handleSaveProduct}>
               <Text style={styles.saveButtonText}>Save Product</Text>
@@ -580,26 +575,41 @@ const styles = StyleSheet.create({
   modalScrollContent: {
     paddingBottom: 100,
   },
-  imagePicker: {
-    width: '100%',
-    height: 100,
-    marginBottom: spacing.md,
-    borderRadius: 12,
+  skuImageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  skuInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    ...typography.body,
+    color: colors.text,
+    minHeight: 48,
+  },
+  imagePickerSquare: {
+    width: 96,
+    height: 96,
+    borderRadius: 8,
     overflow: 'hidden',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: '100%',
     backgroundColor: colors.border,
+  },
+  previewImageSquare: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePlaceholderSquare: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   imagePlaceholderText: {
-    ...typography.body,
+    ...typography.caption,
     color: colors.textSecondary,
   },
   formGroup: {
@@ -650,22 +660,11 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontWeight: '600',
   },
-  toggleButton: {
-    backgroundColor: colors.border,
-    padding: spacing.md,
-    borderRadius: 8,
+  activeRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.lg,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.success,
-  },
-  toggleButtonText: {
-    ...typography.button,
-    color: colors.text,
-  },
-  toggleButtonTextActive: {
-    color: colors.surface,
   },
   saveButton: {
     backgroundColor: colors.primary,
