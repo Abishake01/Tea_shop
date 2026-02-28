@@ -19,12 +19,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize default admin on first launch
     userService.initializeDefaultAdmin();
-
-    // Load current user from storage
-    const currentUser = Storage.getObject<User>(StorageKeys.CURRENT_USER);
-    setUser(currentUser);
     setIsLoading(false);
   }, []);
 
@@ -32,7 +27,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const loggedInUser = userService.login(username, password);
     if (loggedInUser) {
       setUser(loggedInUser);
-      Storage.setObject(StorageKeys.CURRENT_USER, loggedInUser);
       return true;
     }
     return false;

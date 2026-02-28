@@ -146,5 +146,9 @@ export const StorageKeys = {
   TOKEN_COUNTER: 'tokenCounter',
   PRINTER_ADDRESS: 'printerAddress',
   RECENT_CATEGORIES: 'recentCategories',
+  REPORT_TAB: 'reportTab',
+  REPORT_PERIOD: 'reportPeriod',
+  REPORT_CUSTOM_START: 'reportCustomStart',
+  REPORT_CUSTOM_END: 'reportCustomEnd',
 } as const;
 

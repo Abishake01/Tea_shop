@@ -30,7 +30,7 @@ import { RouteProp } from '@react-navigation/native';
 
 const TokenScreen: React.FC = () => {
   const { user } = useAuth();
-  const { items, clearCart, addItem, itemCount } = useCart();
+  const { items, clearCart, addItem, itemCount, isCompliment, paymentMethod } = useCart();
   const { categories, getProductsByCategory, refreshAll } = useProducts();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isReceiptVisible, setIsReceiptVisible] = useState(false);
@@ -62,7 +62,7 @@ const TokenScreen: React.FC = () => {
   const handleCheckout = () => {
     if (!user || items.length === 0) return;
 
-    const newOrder = orderService.createTokenOrder(items, user.id);
+    const newOrder = orderService.createTokenOrder(items, user.id, { isCompliment, paymentMethod });
     clearCart();
     setIsCartOpen(false);
     setSelectedOrder(newOrder);

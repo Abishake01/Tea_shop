@@ -24,13 +24,35 @@ const expandItemsForTokens = (items: OrderItem[]): OrderItem[] => {
   return expanded;
 };
 
-const TokenCard: React.FC<{ itemLabel: string; tokenNumber?: number; shopName: string }> = ({
+const groupItemsByProduct = (
+  items: OrderItem[]
+): Array<{ productName: string; quantity: number; tokenNumbers: number[] }> => {
+  const map = new Map<string, { productName: string; quantity: number; tokenNumbers: number[] }>();
+  items.forEach(item => {
+    const existing = map.get(item.productId);
+    if (existing) {
+      existing.quantity += item.quantity;
+      if (item.tokenNumber != null) existing.tokenNumbers.push(item.tokenNumber);
+    } else {
+      map.set(item.productId, {
+        productName: item.productName,
+        quantity: item.quantity,
+        tokenNumbers: item.tokenNumber != null ? [item.tokenNumber] : [],
+      });
+    }
+  });
+  return Array.from(map.values());
+};
+
+const TokenCard: React.FC<{ itemLabel: string; tokenNumber?: number; shopName: string; isCompliment?: boolean }> = ({
   itemLabel,
   tokenNumber,
   shopName,
+  isCompliment,
 }) => (
   <View style={styles.card}>
     <Text style={styles.shopName}>{shopName}</Text>
+    {isCompliment && <Text style={styles.complimentLabel}>Complimentary</Text>}
     <Text style={styles.itemName}>{itemLabel}</Text>
     <Text style={styles.tokenLabel}>Token No: {padToken(tokenNumber)}</Text>
     <View style={styles.tokenCircle}>
@@ -40,13 +62,17 @@ const TokenCard: React.FC<{ itemLabel: string; tokenNumber?: number; shopName: s
   </View>
 );
 
+const isComplimentOrder = (order: Order) => order.isCompliment === true || order.total === 0;
+
 export const TokenTicket: React.FC<TokenTicketProps> = ({ order, mode }) => {
   const settings = settingsService.getSettings();
   const ticketMode = mode || settings.tokenPrintMode || 'single';
   const shopName = settings.shopName || 'Retail Shop';
+  const compliment = isComplimentOrder(order);
 
-  const namesWithQty = order.items
-    .map(item => `${item.productName} ×${item.quantity}`)
+  const groupedItems = groupItemsByProduct(order.items);
+  const namesWithQty = groupedItems
+    .map(g => `${g.productName} ×${g.quantity}`)
     .join('\n');
 
   if (ticketMode === 'multi') {
@@ -61,21 +87,24 @@ export const TokenTicket: React.FC<TokenTicketProps> = ({ order, mode }) => {
             itemLabel={item.productName}
             tokenNumber={item.tokenNumber ?? order.tokenNumber}
             shopName={shopName}
+            isCompliment={compliment}
           />
         ))}
       </View>
     );
   }
 
-  // Single token that lists all items together
+  // Single token that lists all items together (grouped by product)
   return (
     <View style={styles.container}>
-      <TokenCard itemLabel={namesWithQty} tokenNumber={order.tokenNumber} shopName={shopName} />
+      <TokenCard itemLabel={namesWithQty} tokenNumber={order.tokenNumber} shopName={shopName} isCompliment={compliment} />
       <View style={styles.itemsList}>
-        {order.items.map((item, idx) => (
-          <Text key={`${item.productId}-${idx}`} style={styles.itemLine}>
-            • {item.productName} ×{item.quantity}
-            {item.tokenNumber != null ? `  Token #${item.tokenNumber}` : ''}
+        {groupedItems.map((g, idx) => (
+          <Text key={`${g.productName}-${idx}`} style={styles.itemLine}>
+            • {g.productName} ×{g.quantity}
+            {g.tokenNumbers.length > 0
+              ? `  Token ${g.tokenNumbers.map(t => `#${t}`).join(', ')}`
+              : ''}
           </Text>
         ))}
       </View>
@@ -104,8 +133,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
+  complimentLabel: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
   itemName: {
-    ...typography.h4,
+    ...typography.h3,
     color: colors.text,
     marginBottom: spacing.xs,
     textAlign: 'center',

@@ -10,11 +10,14 @@ interface ReceiptViewProps {
   printerStatus?: string;
 }
 
+const isComplimentOrder = (order: Order) => order.isCompliment === true || order.total === 0;
+
 const ReceiptView: React.FC<ReceiptViewProps> = ({
   order,
   shopName = 'Tea & Juice Shop',
   printerStatus,
 }) => {
+  const compliment = isComplimentOrder(order);
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.receipt}>
@@ -28,6 +31,9 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
         {order.tokenNumber && (
           <Text style={styles.label}>Token: #{order.tokenNumber}</Text>
         )}
+        {compliment && (
+          <Text style={styles.complimentLabel}>Complimentary</Text>
+        )}
         <Text style={styles.date}>{formatDateTime(order.timestamp)}</Text>
         <Text style={styles.divider}>━━━━━━━━━━━━━━━━━━━━</Text>
 
@@ -37,12 +43,12 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
               <View style={styles.itemLeft}>
                 <Text style={styles.itemName}>{item.productName}</Text>
                 <Text style={styles.itemDetails}>
-                  {item.quantity} × {formatCurrency(item.unitPrice)}
-                  {item.tax > 0 && ` (+${item.tax}% tax)`}
+                  {item.quantity} × {compliment ? 'Complimentary' : formatCurrency(item.unitPrice)}
+                  {item.tax > 0 && !compliment && ` (+${item.tax}% tax)`}
                   {item.tokenNumber != null && ` · Token #${item.tokenNumber}`}
                 </Text>
               </View>
-              <Text style={styles.itemTotal}>{formatCurrency(item.subtotal)}</Text>
+              <Text style={styles.itemTotal}>{formatCurrency(compliment ? 0 : item.subtotal)}</Text>
             </View>
           ))}
         </View>
@@ -52,17 +58,17 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
         <View style={styles.totals}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(order.subtotal)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(compliment ? 0 : order.subtotal)}</Text>
           </View>
-          {order.tax > 0 && (
+          {(order.tax > 0 || compliment) && (
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Tax:</Text>
-              <Text style={styles.totalValue}>{formatCurrency(order.tax)}</Text>
+              <Text style={styles.totalValue}>{formatCurrency(compliment ? 0 : order.tax)}</Text>
             </View>
           )}
           <View style={[styles.totalRow, styles.finalTotal]}>
             <Text style={styles.finalTotalLabel}>TOTAL:</Text>
-            <Text style={styles.finalTotalValue}>{formatCurrency(order.total)}</Text>
+            <Text style={styles.finalTotalValue}>{formatCurrency(compliment ? 0 : order.total)}</Text>
           </View>
         </View>
 
@@ -116,6 +122,13 @@ const styles = StyleSheet.create({
     ...typography.receipt,
     textAlign: 'center',
     color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  complimentLabel: {
+    ...typography.receipt,
+    textAlign: 'center',
+    color: colors.primary,
+    fontWeight: '600',
     marginBottom: spacing.xs,
   },
   date: {

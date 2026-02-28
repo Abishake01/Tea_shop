@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Switch,
 } from 'react-native';
 import { useCart } from '../../context/CartContext';
+import type { PaymentMethod } from '../../context/CartContext';
 import { colors, spacing, typography } from '../../theme';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -16,7 +18,20 @@ interface CartPanelProps {
 }
 
 const CartPanel: React.FC<CartPanelProps> = ({ onCheckout }) => {
-  const { items, updateQuantity, removeItem, subtotal, tax, total, itemCount, clearCart } = useCart();
+  const {
+    items,
+    updateQuantity,
+    removeItem,
+    subtotal,
+    tax,
+    total,
+    itemCount,
+    clearCart,
+    paymentMethod,
+    setPaymentMethod,
+    isCompliment,
+    setIsCompliment,
+  } = useCart();
 
   const handleIncreaseQuantity = (productId: string, currentQuantity: number) => {
     updateQuantity(productId, currentQuantity + 1);
@@ -102,6 +117,33 @@ const CartPanel: React.FC<CartPanelProps> = ({ onCheckout }) => {
           <Text style={styles.totalLabel}>Total:</Text>
           <Text style={styles.totalValue}>{formatCurrency(total)}</Text>
         </View>
+      </View>
+
+      <View style={styles.paymentSection}>
+        <Text style={styles.paymentLabel}>Payment</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.paymentChips}>
+          {(['Cash', 'Card', 'Scanner', 'Bank Account'] as PaymentMethod[]).map(method => (
+            <TouchableOpacity
+              key={method}
+              style={[styles.paymentChip, paymentMethod === method && styles.paymentChipActive]}
+              onPress={() => setPaymentMethod(method)}
+            >
+              <Text style={[styles.paymentChipText, paymentMethod === method && styles.paymentChipTextActive]}>
+                {method}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.complimentRow}>
+        <Text style={styles.complimentLabel}>Compliment (0 amount)</Text>
+        <Switch
+          value={isCompliment}
+          onValueChange={setIsCompliment}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={colors.surface}
+        />
       </View>
 
       <TouchableOpacity style={styles.checkoutButton} onPress={onCheckout}>
@@ -236,6 +278,51 @@ const styles = StyleSheet.create({
   totalValue: {
     ...typography.h3,
     color: colors.primary,
+  },
+  paymentSection: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  paymentLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  paymentChips: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  paymentChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    backgroundColor: colors.border,
+  },
+  paymentChipActive: {
+    backgroundColor: colors.primary,
+  },
+  paymentChipText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  paymentChipTextActive: {
+    color: colors.surface,
+  },
+  complimentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  complimentLabel: {
+    ...typography.bodySmall,
+    color: colors.text,
   },
   checkoutButton: {
     backgroundColor: colors.primary,

@@ -19,7 +19,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'H
 
 const HomeScreen: React.FC = () => {
   const { activeProducts, categories, getProductsByCategory, refreshAll } = useProducts();
-  const { addItem, items, clearCart, itemCount } = useCart();
+  const { addItem, items, clearCart, itemCount, isCompliment, paymentMethod } = useCart();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -52,7 +52,7 @@ const HomeScreen: React.FC = () => {
         {
           text: 'Regular Order',
           onPress: () => {
-            const newOrder = orderService.createOrder(items, user.id);
+            const newOrder = orderService.createOrder(items, user.id, undefined, { isCompliment, paymentMethod });
             clearCart();
             navigation.navigate('Billing', { openReceiptId: newOrder.id });
           },
@@ -60,7 +60,7 @@ const HomeScreen: React.FC = () => {
         {
           text: 'Token Order',
           onPress: () => {
-            const newOrder = orderService.createTokenOrder(items, user.id);
+            const newOrder = orderService.createTokenOrder(items, user.id, { isCompliment, paymentMethod });
             clearCart();
             navigation.navigate('Token', { openReceiptId: newOrder.id });
           },

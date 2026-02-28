@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { CartItem, Product } from '../types';
 
+export type PaymentMethod = 'Cash' | 'Card' | 'Scanner' | 'Bank Account';
+
 interface CartContextType {
   items: CartItem[];
   addItem: (product: Product) => void;
@@ -11,12 +13,18 @@ interface CartContextType {
   tax: number;
   total: number;
   itemCount: number;
+  paymentMethod: PaymentMethod;
+  setPaymentMethod: (method: PaymentMethod) => void;
+  isCompliment: boolean;
+  setIsCompliment: (value: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
+  const [isCompliment, setIsCompliment] = useState(false);
 
   const addItem = useCallback((product: Product) => {
     setItems(prevItems => {
@@ -76,14 +84,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const clearCart = useCallback(() => {
     setItems([]);
+    setIsCompliment(false);
   }, []);
 
-  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const tax = items.reduce((sum, item) => {
+  const subtotal = isCompliment ? 0 : items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const tax = isCompliment ? 0 : items.reduce((sum, item) => {
     const itemSubtotal = item.quantity * item.unitPrice;
     return sum + itemSubtotal * (item.tax / 100);
   }, 0);
-  const total = subtotal + tax;
+  const total = isCompliment ? 0 : subtotal + tax;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   const value: CartContextType = {
@@ -96,6 +105,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     tax,
     total,
     itemCount,
+    paymentMethod,
+    setPaymentMethod,
+    isCompliment,
+    setIsCompliment,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

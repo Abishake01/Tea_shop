@@ -1,4 +1,4 @@
-import { Order } from '../types';
+import { Order, OrderItem } from '../types';
 import { settingsService } from './settingsService';
 import { Storage, StorageKeys } from './storage';
 import { formatCurrency } from '../utils/formatters';
@@ -60,8 +60,11 @@ const padToken = (tokenNumber?: number) => {
   return tokenNumber.toString().padStart(3, '0');
 };
 
+const isComplimentOrder = (order: Order) => order.isCompliment === true || order.total === 0;
+
 const formatOrderText = (order: Order, shopName: string, currency: string): string => {
   const lines: string[] = [];
+  const compliment = isComplimentOrder(order);
 
   lines.push(`${shopName}\n`);
   lines.push(`${line}\n`);
@@ -69,34 +72,51 @@ const formatOrderText = (order: Order, shopName: string, currency: string): stri
   if (order.tokenNumber !== undefined) {
     lines.push(`Token: #${order.tokenNumber}\n`);
   }
+  if (compliment) {
+    lines.push(`Complimentary\n`);
+  }
   lines.push(`Date: ${new Date(order.timestamp).toLocaleString()}\n`);
   lines.push(`${line}\n`);
 
   order.items.forEach(item => {
     const itemLine = `${item.productName} x${item.quantity}`;
-    const amountLine = `${formatMoney(item.subtotal, currency)}`;
+    const amount = compliment ? 0 : item.subtotal;
+    const unitPrice = compliment ? 0 : item.unitPrice;
     lines.push(`${itemLine}\n`);
-    lines.push(`  ${formatMoney(item.unitPrice, currency)} each`);
-    if (item.tax > 0) {
+    lines.push(`  ${compliment ? 'Complimentary' : formatMoney(unitPrice, currency)} each`);
+    if (item.tax > 0 && !compliment) {
       lines.push(` (+${item.tax}% tax)`);
     }
-    lines.push(`  ${amountLine}\n`);
+    lines.push(`  ${formatMoney(amount, currency)}\n`);
   });
 
   lines.push(`${line}\n`);
-  lines.push(`Subtotal: ${formatMoney(order.subtotal, currency)}\n`);
-  lines.push(`Tax: ${formatMoney(order.tax, currency)}\n`);
-  lines.push(`TOTAL: ${formatMoney(order.total, currency)}\n`);
+  lines.push(`Subtotal: ${formatMoney(compliment ? 0 : order.subtotal, currency)}\n`);
+  lines.push(`Tax: ${formatMoney(compliment ? 0 : order.tax, currency)}\n`);
+  lines.push(`TOTAL: ${formatMoney(compliment ? 0 : order.total, currency)}\n`);
   lines.push(`${line}\n`);
   lines.push(`Thank you!\n\n\n`);
 
   return lines.join('');
 };
 
+const groupItemsByProduct = (items: OrderItem[]): Array<{ productName: string; quantity: number }> => {
+  const map = new Map<string, { productName: string; quantity: number }>();
+  items.forEach(item => {
+    const existing = map.get(item.productId);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      map.set(item.productId, { productName: item.productName, quantity: item.quantity });
+    }
+  });
+  return Array.from(map.values());
+};
+
 const getTokenItemLabel = (order: Order): string => {
-  // Similar to the TokenTicket preview: show item names with qty.
   if (!order.items?.length) return '';
-  return order.items.map(item => `${item.productName} ×${item.quantity}`).join('\n');
+  const grouped = groupItemsByProduct(order.items);
+  return grouped.map(g => `${g.productName} ×${g.quantity}`).join('\n');
 };
 
 const getEscPosModule = () => {
@@ -210,12 +230,14 @@ const printTokenTicketEscPos = async (order: Order, shopName: string): Promise<b
     await printerAlign(ALIGN.CENTER);
   }
 
+  const compliment = isComplimentOrder(order);
   const itemsWithTokens = order.items.filter(i => i.tokenNumber != null);
   const multiMode = settingsService.getSettings().tokenPrintMode === 'multi' && itemsWithTokens.length > 0;
 
   if (multiMode && itemsWithTokens.length > 0) {
     for (const item of itemsWithTokens) {
       await printer.printText(`${shopName}\r\n`, { fonttype: 1 });
+      if (compliment) await printer.printText(`Complimentary\r\n`, { fonttype: 1 });
       await printer.printText(`${item.productName}\r\n`, { fonttype: 1 });
       await printer.printText(`Token No: ${padToken(item.tokenNumber)}\r\n\r\n`, { fonttype: 1 });
       const tokenNumText = item.tokenNumber == null ? '-' : String(item.tokenNumber);
@@ -227,6 +249,7 @@ const printTokenTicketEscPos = async (order: Order, shopName: string): Promise<b
 
   const itemLabel = getTokenItemLabel(order);
   await printer.printText(`${shopName}\r\n`, { fonttype: 1 });
+  if (compliment) await printer.printText(`Complimentary\r\n`, { fonttype: 1 });
   if (itemLabel) {
     await printer.printText(`${itemLabel}\r\n`, { fonttype: 1 });
   }

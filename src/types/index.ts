@@ -41,6 +41,8 @@ export interface Order {
   timestamp: number;
   userId: string;
   status?: 'preparing' | 'ready' | 'completed';
+  paymentMethod?: string;
+  isCompliment?: boolean;
 }
 
 export interface Category {

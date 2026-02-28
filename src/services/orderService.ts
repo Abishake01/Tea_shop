@@ -2,32 +2,38 @@ import { Storage, StorageKeys } from './storage';
 import { Order, OrderItem, CartItem } from '../types';
 import { productService } from './productService';
 
-const tokenCounterKey = (category: string) =>
-  `tokenCounter_${category.replace(/[^a-zA-Z0-9]/g, '_')}`;
+const tokenCounterKey = (category: string) => {
+  const today = new Date().toISOString().slice(0, 10);
+  return `tokenCounter_${category.replace(/[^a-zA-Z0-9]/g, '_')}_${today}`;
+};
+
+type CreateOrderOptions = { isCompliment?: boolean; paymentMethod?: string };
 
 export const orderService = {
   createOrder: (
     items: CartItem[],
     userId: string,
-    tokenNumber?: number
+    tokenNumber?: number,
+    options?: CreateOrderOptions
   ): Order => {
     const orders = orderService.getAllOrders();
-    
+    const isCompliment = options?.isCompliment ?? false;
+
     const orderItems: OrderItem[] = items.map(item => ({
       productId: item.productId,
       productName: item.productName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       tax: item.tax,
-      subtotal: item.subtotal,
+      subtotal: isCompliment ? 0 : item.subtotal,
     }));
 
-    const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-    const tax = items.reduce((sum, item) => {
+    const subtotal = isCompliment ? 0 : items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const tax = isCompliment ? 0 : items.reduce((sum, item) => {
       const itemSubtotal = item.quantity * item.unitPrice;
       return sum + itemSubtotal * (item.tax / 100);
     }, 0);
-    const total = subtotal + tax;
+    const total = isCompliment ? 0 : subtotal + tax;
 
     const newOrder: Order = {
       id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -39,6 +45,8 @@ export const orderService = {
       timestamp: Date.now(),
       userId,
       status: tokenNumber ? 'preparing' : undefined,
+      paymentMethod: options?.paymentMethod,
+      isCompliment: isCompliment || undefined,
     };
 
     orders.push(newOrder);
@@ -60,10 +68,11 @@ export const orderService = {
     return current + 1;
   },
 
-  createTokenOrder: (items: CartItem[], userId: string): Order => {
+  createTokenOrder: (items: CartItem[], userId: string, options?: CreateOrderOptions): Order => {
     const orders = orderService.getAllOrders();
     const orderItems: OrderItem[] = [];
     let firstToken: number | undefined;
+    const isCompliment = options?.isCompliment ?? false;
 
     for (const cartItem of items) {
       const product = productService.getProductById(cartItem.productId);
@@ -77,16 +86,16 @@ export const orderService = {
           quantity: 1,
           unitPrice: cartItem.unitPrice,
           tax: cartItem.tax,
-          subtotal: cartItem.unitPrice * (1 + cartItem.tax / 100),
+          subtotal: isCompliment ? 0 : cartItem.unitPrice * (1 + cartItem.tax / 100),
           tokenNumber: tokenNum,
           category,
         });
       }
     }
 
-    const subtotal = orderItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
-    const tax = orderItems.reduce((sum, i) => sum + i.unitPrice * i.quantity * (i.tax / 100), 0);
-    const total = subtotal + tax;
+    const subtotal = isCompliment ? 0 : orderItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+    const tax = isCompliment ? 0 : orderItems.reduce((sum, i) => sum + i.unitPrice * i.quantity * (i.tax / 100), 0);
+    const total = isCompliment ? 0 : subtotal + tax;
 
     const newOrder: Order = {
       id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -98,6 +107,8 @@ export const orderService = {
       timestamp: Date.now(),
       userId,
       status: 'preparing',
+      paymentMethod: options?.paymentMethod,
+      isCompliment: isCompliment || undefined,
     };
 
     orders.push(newOrder);

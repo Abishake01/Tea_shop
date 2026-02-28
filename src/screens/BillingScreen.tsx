@@ -29,7 +29,7 @@ import { RouteProp } from '@react-navigation/native';
 
 const BillingScreen: React.FC = () => {
   const { user } = useAuth();
-  const { items, clearCart, addItem, itemCount } = useCart();
+  const { items, clearCart, addItem, itemCount, isCompliment, paymentMethod } = useCart();
   const { categories, getProductsByCategory, refreshAll } = useProducts();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isReceiptVisible, setIsReceiptVisible] = useState(false);
@@ -59,7 +59,7 @@ const BillingScreen: React.FC = () => {
   const handleCheckout = () => {
     if (!user || items.length === 0) return;
 
-    const newOrder = orderService.createOrder(items, user.id);
+    const newOrder = orderService.createOrder(items, user.id, undefined, { isCompliment, paymentMethod });
     clearCart();
     setIsCartOpen(false);
     setSelectedOrder(newOrder);

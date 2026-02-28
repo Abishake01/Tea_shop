@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,8 @@ import {
   Alert,
   FlatList,
   Switch,
-  Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { CustomDatePicker } from '../components/common/CustomDatePicker';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
 import { settingsService } from '../services/settingsService';
@@ -22,6 +21,7 @@ import { colors, spacing, typography } from '../theme';
 import { reportService } from '../services/reportService';
 import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
 import { printService } from '../services/printService';
+import { Storage, StorageKeys } from '../services/storage';
 import ScreenHeader from '../components/common/ScreenHeader';
 import ReceiptView from '../components/common/ReceiptView';
 import TokenTicket from '../components/common/TokenTicket';
@@ -65,6 +65,7 @@ const ProfileScreen: React.FC = () => {
   const [ordersHistoryTab, setOrdersHistoryTab] = useState<'billing' | 'token'>('billing');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isReceiptVisible, setIsReceiptVisible] = useState(false);
+  const isFirstReportPrefsRender = useRef(true);
 
   useEffect(() => {
     if (isAdmin) {
@@ -91,6 +92,30 @@ const ProfileScreen: React.FC = () => {
   useEffect(() => {
     setSelectedPrinter(printService.getSelectedPrinter());
   }, []);
+
+  useEffect(() => {
+    const savedTab = Storage.getString(StorageKeys.REPORT_TAB);
+    if (savedTab === 'billing' || savedTab === 'token') setReportTab(savedTab);
+    const savedPeriod = Storage.getString(StorageKeys.REPORT_PERIOD);
+    if (savedPeriod === 'today' || savedPeriod === 'week' || savedPeriod === 'month' || savedPeriod === 'custom') {
+      setSelectedPeriod(savedPeriod);
+    }
+    const savedStart = Storage.getNumber(StorageKeys.REPORT_CUSTOM_START);
+    if (savedStart != null) setCustomStartDate(savedStart);
+    const savedEnd = Storage.getNumber(StorageKeys.REPORT_CUSTOM_END);
+    if (savedEnd != null) setCustomEndDate(savedEnd);
+  }, []);
+
+  useEffect(() => {
+    if (isFirstReportPrefsRender.current) {
+      isFirstReportPrefsRender.current = false;
+      return;
+    }
+    Storage.setString(StorageKeys.REPORT_TAB, reportTab);
+    Storage.setString(StorageKeys.REPORT_PERIOD, selectedPeriod);
+    Storage.setNumber(StorageKeys.REPORT_CUSTOM_START, customStartDate);
+    Storage.setNumber(StorageKeys.REPORT_CUSTOM_END, customEndDate);
+  }, [reportTab, selectedPeriod, customStartDate, customEndDate]);
 
   const getReportRange = () => {
     const now = Date.now();
@@ -297,8 +322,23 @@ const ProfileScreen: React.FC = () => {
     );
   };
 
-  const billingOrders = orderService.getBillingOrders().sort((a, b) => b.timestamp - a.timestamp);
-  const tokenOrders = orderService.getTokenOrders().sort((a, b) => (b.tokenNumber ?? 0) - (a.tokenNumber ?? 0));
+  const { startOfToday, endOfToday } = (() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+    return { startOfToday: start.getTime(), endOfToday: end.getTime() };
+  })();
+  const isToday = (ts: number) => ts >= startOfToday && ts <= endOfToday;
+  const billingOrders = orderService
+    .getBillingOrders()
+    .filter(o => isToday(o.timestamp))
+    .sort((a, b) => b.timestamp - a.timestamp);
+  const tokenOrders = orderService
+    .getTokenOrders()
+    .filter(o => isToday(o.timestamp))
+    .sort((a, b) => (b.tokenNumber ?? 0) - (a.tokenNumber ?? 0));
 
   const handleViewOrderReceipt = (order: Order) => {
     setSelectedOrder(order);
@@ -778,70 +818,35 @@ const ProfileScreen: React.FC = () => {
           )}
 
           {customDatePickerMode !== null && (
-            <Modal transparent animationType="fade" visible>
-              <TouchableOpacity
-                style={styles.datePickerBackdrop}
-                activeOpacity={1}
-                onPress={() => setCustomDatePickerMode(null)}
-              >
-                <View style={styles.datePickerContainer}>
-                  <View style={styles.datePickerHeader}>
-                    <Text style={styles.datePickerTitle}>
-                      Choose {customDatePickerMode === 'from' ? 'start' : 'end'} date
-                    </Text>
-                    <TouchableOpacity onPress={() => setCustomDatePickerMode(null)}>
-                      <Text style={styles.closeButton}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <DateTimePicker
-                    value={
-                      customDatePickerMode === 'from'
-                        ? new Date(customStartDate)
-                        : new Date(customEndDate)
-                    }
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-                    onChange={(event, date) => {
-                      if (Platform.OS === 'android' && event.type === 'dismissed') {
-                        setCustomDatePickerMode(null);
-                        return;
-                      }
-                      if (date) {
-                        const ts = date.getTime();
-                        if (customDatePickerMode === 'from') {
-                          setCustomStartDate(ts);
-                          if (ts >= customEndDate) {
-                            const end = new Date(ts);
-                            end.setHours(23, 59, 59, 999);
-                            setCustomEndDate(end.getTime());
-                          }
-                        } else {
-                          setCustomEndDate(ts);
-                          if (ts <= customStartDate) {
-                            const start = new Date(ts);
-                            start.setHours(0, 0, 0, 0);
-                            setCustomStartDate(start.getTime());
-                          }
-                        }
-                        setCustomDatePickerMode(null);
-                        loadReport();
-                      }
-                    }}
-                  />
-                  {Platform.OS === 'ios' && (
-                    <TouchableOpacity
-                      style={styles.customRangeApplyButton}
-                      onPress={() => {
-                        setCustomDatePickerMode(null);
-                        loadReport();
-                      }}
-                    >
-                      <Text style={styles.customRangeApplyText}>Done</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </Modal>
+            <CustomDatePicker
+              visible
+              value={
+                customDatePickerMode === 'from'
+                  ? new Date(customStartDate)
+                  : new Date(customEndDate)
+              }
+              onChange={date => {
+                const ts = date.getTime();
+                if (customDatePickerMode === 'from') {
+                  setCustomStartDate(ts);
+                  if (ts >= customEndDate) {
+                    const end = new Date(ts);
+                    end.setHours(23, 59, 59, 999);
+                    setCustomEndDate(end.getTime());
+                  }
+                } else {
+                  setCustomEndDate(ts);
+                  if (ts <= customStartDate) {
+                    const start = new Date(ts);
+                    start.setHours(0, 0, 0, 0);
+                    setCustomStartDate(start.getTime());
+                  }
+                }
+                setCustomDatePickerMode(null);
+                loadReport();
+              }}
+              onCancel={() => setCustomDatePickerMode(null)}
+            />
           )}
 
           <ScrollView
@@ -1044,7 +1049,7 @@ const ProfileScreen: React.FC = () => {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
-                  {ordersHistoryTab === 'billing' ? 'No billing orders yet' : 'No token orders yet'}
+                  {ordersHistoryTab === 'billing' ? 'No billing orders today' : 'No token orders today'}
                 </Text>
               </View>
             }
@@ -1490,29 +1495,6 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.surface,
     fontWeight: '600',
-  },
-  datePickerBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  datePickerContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.md,
-    minWidth: 280,
-  },
-  datePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  datePickerTitle: {
-    ...typography.h3,
-    color: colors.text,
   },
   reportsSummaryContainer: {
     flexDirection: 'row',
