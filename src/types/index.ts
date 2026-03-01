@@ -60,16 +60,25 @@ export interface CartItem {
   subtotal: number;
 }
 
+export interface SalesReportProduct {
+  productId: string;
+  productName: string;
+  quantity: number;
+  revenue: number;
+  category?: string;
+}
+
 export interface SalesReport {
   totalSales: number;
   totalOrders: number;
   averageOrderValue: number;
-  topProducts: Array<{
-    productId: string;
-    productName: string;
-    quantity: number;
-    revenue: number;
-  }>;
+  topProducts: SalesReportProduct[];
+  /** All items sold (no limit) - for full item list */
+  allProducts?: SalesReportProduct[];
+  /** Products grouped by category */
+  productsByCategory?: Record<string, { items: SalesReportProduct[]; totalQty: number; totalRevenue: number }>;
+  /** Token report: items grouped by token number */
+  tokenByNumber?: Record<number, { items: SalesReportProduct[]; orderId: string; total: number }>;
   dateRange: {
     start: number;
     end: number;

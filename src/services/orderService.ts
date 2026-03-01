@@ -19,14 +19,19 @@ export const orderService = {
     const orders = orderService.getAllOrders();
     const isCompliment = options?.isCompliment ?? false;
 
-    const orderItems: OrderItem[] = items.map(item => ({
-      productId: item.productId,
-      productName: item.productName,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      tax: item.tax,
-      subtotal: isCompliment ? 0 : item.subtotal,
-    }));
+    const orderItems: OrderItem[] = items.map(item => {
+      const product = productService.getProductById(item.productId);
+      const category = product?.category ?? 'Other';
+      return {
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        tax: item.tax,
+        subtotal: isCompliment ? 0 : item.subtotal,
+        category,
+      };
+    });
 
     const subtotal = isCompliment ? 0 : items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const tax = isCompliment ? 0 : items.reduce((sum, item) => {

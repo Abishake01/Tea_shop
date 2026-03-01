@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
 import { settingsService } from '../services/settingsService';
 import { orderService } from '../services/orderService';
+import { productService, categoryService } from '../services/productService';
 import { User, Settings, SalesReport, Order } from '../types';
 import { colors, spacing, typography } from '../theme';
 import { reportService } from '../services/reportService';
@@ -34,7 +35,8 @@ const ProfileScreen: React.FC = () => {
   const [isUserManagementVisible, setIsUserManagementVisible] = useState(false);
   const [isAddStaffModalVisible, setIsAddStaffModalVisible] = useState(false);
   const [isReportsVisible, setIsReportsVisible] = useState(false);
-  const [reportTab, setReportTab] = useState<'billing' | 'token'>('billing');
+  const [reportTab, setReportTab] = useState<'all' | 'billing' | 'token'>('all');
+  const [reportViewMode, setReportViewMode] = useState<'products' | 'category' | 'tokenNumber'>('products');
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'custom'>('today');
   const [customStartDate, setCustomStartDate] = useState<number>(() => {
     const d = new Date();
@@ -63,6 +65,7 @@ const ProfileScreen: React.FC = () => {
   });
   const [isOrdersHistoryVisible, setIsOrdersHistoryVisible] = useState(false);
   const [ordersHistoryTab, setOrdersHistoryTab] = useState<'billing' | 'token'>('billing');
+  const [ordersHistoryCategory, setOrdersHistoryCategory] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isReceiptVisible, setIsReceiptVisible] = useState(false);
   const isFirstReportPrefsRender = useRef(true);
@@ -95,7 +98,7 @@ const ProfileScreen: React.FC = () => {
 
   useEffect(() => {
     const savedTab = Storage.getString(StorageKeys.REPORT_TAB);
-    if (savedTab === 'billing' || savedTab === 'token') setReportTab(savedTab);
+    if (savedTab === 'all' || savedTab === 'billing' || savedTab === 'token') setReportTab(savedTab);
     const savedPeriod = Storage.getString(StorageKeys.REPORT_PERIOD);
     if (savedPeriod === 'today' || savedPeriod === 'week' || savedPeriod === 'month' || savedPeriod === 'custom') {
       setSelectedPeriod(savedPeriod);
@@ -331,14 +334,21 @@ const ProfileScreen: React.FC = () => {
     return { startOfToday: start.getTime(), endOfToday: end.getTime() };
   })();
   const isToday = (ts: number) => ts >= startOfToday && ts <= endOfToday;
-  const billingOrders = orderService
+  const getOrderItemCategory = (item: { productId: string; category?: string }) =>
+    item.category ?? productService.getProductById(item.productId)?.category ?? 'Other';
+  const orderHasCategory = (order: Order, cat: string) =>
+    cat === 'all' || order.items.some(i => getOrderItemCategory(i) === cat);
+  const allBillingOrders = orderService
     .getBillingOrders()
     .filter(o => isToday(o.timestamp))
     .sort((a, b) => b.timestamp - a.timestamp);
-  const tokenOrders = orderService
+  const allTokenOrders = orderService
     .getTokenOrders()
     .filter(o => isToday(o.timestamp))
     .sort((a, b) => (b.tokenNumber ?? 0) - (a.tokenNumber ?? 0));
+  const billingOrders = allBillingOrders.filter(o => orderHasCategory(o, ordersHistoryCategory));
+  const tokenOrders = allTokenOrders.filter(o => orderHasCategory(o, ordersHistoryCategory));
+  const orderHistoryCategories = ['all', ...categoryService.getAllCategories().map(c => c.name)];
 
   const handleViewOrderReceipt = (order: Order) => {
     setSelectedOrder(order);
@@ -739,39 +749,83 @@ const ProfileScreen: React.FC = () => {
           </View>
 
           <View style={styles.reportsTabContainer}>
-            <TouchableOpacity
-              style={[
-                styles.reportsTab,
-                reportTab === 'billing' && styles.reportsTabActive,
-              ]}
-              onPress={() => setReportTab('billing')}
-            >
-              <Text
+            {(['all', 'billing', 'token'] as const).map(tab => (
+              <TouchableOpacity
+                key={tab}
                 style={[
-                  styles.reportsTabText,
-                  reportTab === 'billing' && styles.reportsTabTextActive,
+                  styles.reportsTab,
+                  reportTab === tab && styles.reportsTabActive,
                 ]}
+                onPress={() => setReportTab(tab)}
               >
-                Billing
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.reportsTab,
-                reportTab === 'token' && styles.reportsTabActive,
-              ]}
-              onPress={() => setReportTab('token')}
-            >
-              <Text
-                style={[
-                  styles.reportsTabText,
-                  reportTab === 'token' && styles.reportsTabTextActive,
-                ]}
-              >
-                Token
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.reportsTabText,
+                    reportTab === tab && styles.reportsTabTextActive,
+                  ]}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
+
+          {(reportTab === 'token' || reportTab === 'all' || reportTab === 'billing') && (
+            <View style={styles.reportsViewModeRow}>
+              {reportTab === 'token' ? (
+                <>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportsViewModeBtn,
+                      reportViewMode === 'products' && styles.reportsViewModeBtnActive,
+                    ]}
+                    onPress={() => setReportViewMode('products')}
+                  >
+                    <Text style={styles.reportsViewModeText}>Products</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportsViewModeBtn,
+                      reportViewMode === 'category' && styles.reportsViewModeBtnActive,
+                    ]}
+                    onPress={() => setReportViewMode('category')}
+                  >
+                    <Text style={styles.reportsViewModeText}>Category</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportsViewModeBtn,
+                      reportViewMode === 'tokenNumber' && styles.reportsViewModeBtnActive,
+                    ]}
+                    onPress={() => setReportViewMode('tokenNumber')}
+                  >
+                    <Text style={styles.reportsViewModeText}>Token #</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportsViewModeBtn,
+                      reportViewMode === 'products' && styles.reportsViewModeBtnActive,
+                    ]}
+                    onPress={() => setReportViewMode('products')}
+                  >
+                    <Text style={styles.reportsViewModeText}>Products</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportsViewModeBtn,
+                      reportViewMode === 'category' && styles.reportsViewModeBtnActive,
+                    ]}
+                    onPress={() => setReportViewMode('category')}
+                  >
+                    <Text style={styles.reportsViewModeText}>Category</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
 
           <View style={styles.reportsPeriodContainer}>
             {(['today', 'week', 'month', 'custom'] as const).map(period => (
@@ -888,22 +942,100 @@ const ProfileScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.reportsSection}>
-                  <Text style={styles.reportsSectionTitle}>Top Products</Text>
-                  {report.topProducts.length > 0 ? (
-                    report.topProducts.map(product => (
-                      <View key={product.productId} style={styles.reportsProductRow}>
-                        <View style={styles.reportsProductInfo}>
-                          <Text style={styles.reportsProductName}>{product.productName}</Text>
-                          <Text style={styles.reportsProductDetails}>
-                            {product.quantity} sold
+                  <Text style={styles.reportsSectionTitle}>
+                    {reportViewMode === 'category'
+                      ? 'Items by Category'
+                      : reportViewMode === 'tokenNumber'
+                        ? 'Items by Token Number'
+                        : 'All Items Sold'}
+                  </Text>
+                  {reportViewMode === 'products' && (
+                    <>
+                      {(report.allProducts ?? report.topProducts).length > 0 ? (
+                        (report.allProducts ?? report.topProducts).map(product => (
+                          <View key={product.productId} style={styles.reportsProductRow}>
+                            <View style={styles.reportsProductInfo}>
+                              <Text style={styles.reportsProductName}>{product.productName}</Text>
+                              <Text style={styles.reportsProductDetails}>
+                                {product.quantity} sold
+                                {product.category ? ` • ${product.category}` : ''}
+                              </Text>
+                            </View>
+                            <Text style={styles.reportsProductRevenue}>
+                              {formatCurrency(product.revenue)}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <View style={styles.emptyContainer}>
+                          <Text style={styles.emptyText}>No sales data for this period</Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                  {reportViewMode === 'category' && report.productsByCategory && (
+                    <>
+                      {Object.entries(report.productsByCategory).length > 0 ? (
+                        Object.entries(report.productsByCategory).map(([cat, data]) => (
+                          <View key={cat} style={styles.reportsCategoryBlock}>
+                            <Text style={styles.reportsCategoryTitle}>
+                              {cat} ({data.totalQty} sold, {formatCurrency(data.totalRevenue)})
+                            </Text>
+                            {data.items.map(p => (
+                              <View key={p.productId} style={styles.reportsProductRow}>
+                                <View style={styles.reportsProductInfo}>
+                                  <Text style={styles.reportsProductName}>{p.productName}</Text>
+                                  <Text style={styles.reportsProductDetails}>{p.quantity} sold</Text>
+                                </View>
+                                <Text style={styles.reportsProductRevenue}>
+                                  {formatCurrency(p.revenue)}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        ))
+                      ) : (
+                        <View style={styles.emptyContainer}>
+                          <Text style={styles.emptyText}>No sales data for this period</Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                  {reportViewMode === 'tokenNumber' && (
+                    <>
+                      {report.tokenByNumber && Object.keys(report.tokenByNumber).length > 0 ? (
+                        Object.entries(report.tokenByNumber)
+                          .sort(([a], [b]) => Number(b) - Number(a))
+                          .map(([tn, data]) => (
+                            <View key={tn} style={styles.reportsCategoryBlock}>
+                              <Text style={styles.reportsCategoryTitle}>
+                                Token #{String(tn).padStart(3, '0')} ({formatCurrency(data.total)})
+                              </Text>
+                              {data.items.map(p => (
+                                <View key={p.productId} style={styles.reportsProductRow}>
+                                  <View style={styles.reportsProductInfo}>
+                                    <Text style={styles.reportsProductName}>{p.productName}</Text>
+                                    <Text style={styles.reportsProductDetails}>
+                                      {p.quantity} sold{p.category ? ` • ${p.category}` : ''}
+                                    </Text>
+                                  </View>
+                                  <Text style={styles.reportsProductRevenue}>
+                                    {formatCurrency(p.revenue)}
+                                  </Text>
+                                </View>
+                              ))}
+                            </View>
+                          ))
+                      ) : (
+                        <View style={styles.emptyContainer}>
+                          <Text style={styles.emptyText}>
+                            {reportTab === 'token' ? 'No token sales for this period' : 'No sales data'}
                           </Text>
                         </View>
-                        <Text style={styles.reportsProductRevenue}>
-                          {formatCurrency(product.revenue)}
-                        </Text>
-                      </View>
-                    ))
-                  ) : (
+                      )}
+                    </>
+                  )}
+                  {reportViewMode === 'category' && !report.productsByCategory && (
                     <View style={styles.emptyContainer}>
                       <Text style={styles.emptyText}>No sales data for this period</Text>
                     </View>
@@ -1038,6 +1170,33 @@ const ProfileScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.ordersHistoryCategoryScroll}
+            contentContainerStyle={styles.ordersHistoryCategoryRow}
+          >
+            {orderHistoryCategories.map(cat => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.ordersHistoryCategoryChip,
+                  ordersHistoryCategory === cat && styles.ordersHistoryCategoryChipActive,
+                ]}
+                onPress={() => setOrdersHistoryCategory(cat)}
+              >
+                <Text
+                  style={[
+                    styles.ordersHistoryCategoryChipText,
+                    ordersHistoryCategory === cat && styles.ordersHistoryCategoryChipTextActive,
+                  ]}
+                >
+                  {cat === 'all' ? 'All' : cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           <FlatList
             style={styles.modalFlatList}
@@ -1418,6 +1577,41 @@ const styles = StyleSheet.create({
   reportsTabTextActive: {
     color: colors.surface,
   },
+  reportsViewModeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  reportsViewModeBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    backgroundColor: colors.border,
+  },
+  reportsViewModeBtnActive: {
+    backgroundColor: colors.accent,
+  },
+  reportsViewModeText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  reportsCategoryBlock: {
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    overflow: 'hidden',
+  },
+  reportsCategoryTitle: {
+    ...typography.h3,
+    color: colors.primary,
+    marginBottom: spacing.sm,
+  },
   reportsPeriodContainer: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -1660,6 +1854,36 @@ const styles = StyleSheet.create({
   orderHistoryToken: {
     ...typography.h3,
     color: colors.accent,
+  },
+  ordersHistoryCategoryScroll: {
+    maxHeight: 48,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  ordersHistoryCategoryRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  ordersHistoryCategoryChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    backgroundColor: colors.border,
+  },
+  ordersHistoryCategoryChipActive: {
+    backgroundColor: colors.primary,
+  },
+  ordersHistoryCategoryChipText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  ordersHistoryCategoryChipTextActive: {
+    color: colors.surface,
   },
   orderHistoryStatusBadge: {
     paddingHorizontal: spacing.sm,
