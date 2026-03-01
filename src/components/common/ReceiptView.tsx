@@ -3,11 +3,14 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Order } from '../../types';
 import { colors, spacing, typography } from '../../theme';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { formatMoneyForPrinter, formatDateForPrinter } from '../../services/printService';
 
 interface ReceiptViewProps {
   order: Order;
   shopName?: string;
   printerStatus?: string;
+  /** When true, shows Rs, DD/MM/YYYY, x - matches thermal printer output */
+  printerPreview?: boolean;
 }
 
 const isComplimentOrder = (order: Order) => order.isCompliment === true || order.total === 0;
@@ -16,8 +19,13 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
   order,
   shopName = 'Tea & Juice Shop',
   printerStatus,
+  printerPreview = false,
 }) => {
   const compliment = isComplimentOrder(order);
+  const formatMoney = printerPreview ? formatMoneyForPrinter : (a: number) => formatCurrency(a);
+  const formatDate = printerPreview ? formatDateForPrinter : formatDateTime;
+  const timesSymbol = printerPreview ? 'x' : '×';
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.receipt}>
@@ -34,7 +42,7 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
         {compliment && (
           <Text style={styles.complimentLabel}>Complimentary</Text>
         )}
-        <Text style={styles.date}>{formatDateTime(order.timestamp)}</Text>
+        <Text style={styles.date}>{formatDate(order.timestamp)}</Text>
         <Text style={styles.divider}>━━━━━━━━━━━━━━━━━━━━</Text>
 
         <View style={styles.items}>
@@ -43,12 +51,12 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
               <View style={styles.itemLeft}>
                 <Text style={styles.itemName}>{item.productName}</Text>
                 <Text style={styles.itemDetails}>
-                  {item.quantity} × {compliment ? 'Complimentary' : formatCurrency(item.unitPrice)}
+                  {item.quantity} {timesSymbol} {compliment ? 'Complimentary' : formatMoney(item.unitPrice)}
                   {item.tax > 0 && !compliment && ` (+${item.tax}% tax)`}
                   {item.tokenNumber != null && ` · Token #${item.tokenNumber}`}
                 </Text>
               </View>
-              <Text style={styles.itemTotal}>{formatCurrency(compliment ? 0 : item.subtotal)}</Text>
+              <Text style={styles.itemTotal}>{formatMoney(compliment ? 0 : item.subtotal)}</Text>
             </View>
           ))}
         </View>
@@ -58,17 +66,17 @@ const ReceiptView: React.FC<ReceiptViewProps> = ({
         <View style={styles.totals}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(compliment ? 0 : order.subtotal)}</Text>
+            <Text style={styles.totalValue}>{formatMoney(compliment ? 0 : order.subtotal)}</Text>
           </View>
           {(order.tax > 0 || compliment) && (
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Tax:</Text>
-              <Text style={styles.totalValue}>{formatCurrency(compliment ? 0 : order.tax)}</Text>
+              <Text style={styles.totalValue}>{formatMoney(compliment ? 0 : order.tax)}</Text>
             </View>
           )}
           <View style={[styles.totalRow, styles.finalTotal]}>
             <Text style={styles.finalTotalLabel}>TOTAL:</Text>
-            <Text style={styles.finalTotalValue}>{formatCurrency(compliment ? 0 : order.total)}</Text>
+            <Text style={styles.finalTotalValue}>{formatMoney(compliment ? 0 : order.total)}</Text>
           </View>
         </View>
 

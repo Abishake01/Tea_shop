@@ -147,6 +147,7 @@ const BillingScreen: React.FC = () => {
             <ReceiptView
               order={selectedOrder}
               printerStatus={printService.getPrinterStatusLabel()}
+              printerPreview
             />
           )}
         </View>

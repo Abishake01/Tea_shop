@@ -4,10 +4,10 @@ import { Storage, StorageKeys } from './storage';
 import { Platform, PermissionsAndroid, NativeModules } from 'react-native';
 
 /** Use Rs instead of ₹ for thermal printers (MPT-II etc.) - they use legacy char sets and show ??? for Unicode */
-const formatMoneyForPrinter = (amount: number): string => `Rs ${amount.toFixed(2)}`;
+export const formatMoneyForPrinter = (amount: number): string => `Rs ${amount.toFixed(2)}`;
 
 /** DD/MM/YYYY, HH:MM am/pm - thermal printer friendly, no locale quirks */
-const formatDateForPrinter = (timestamp: number): string => {
+export const formatDateForPrinter = (timestamp: number): string => {
   const d = new Date(timestamp);
   const day = d.getDate();
   const month = d.getMonth() + 1;
@@ -125,10 +125,11 @@ const groupItemsByProduct = (items: OrderItem[]): Array<{ productName: string; q
   return Array.from(map.values());
 };
 
+/** Use x not × - thermal printers show ??? for Unicode */
 const getTokenItemLabel = (order: Order): string => {
   if (!order.items?.length) return '';
   const grouped = groupItemsByProduct(order.items);
-  return grouped.map(g => `${g.productName} ×${g.quantity}`).join('\n');
+  return grouped.map(g => `${g.productName} x${g.quantity}`).join('\n');
 };
 
 const getEscPosModule = () => {
@@ -335,7 +336,6 @@ export const printService = {
     
     const settings = settingsService.getSettings();
     const shopName = settings.shopName || 'Tea & Juice Shop';
-    const currency = settings.currency || 'INR';
 
     const selectedAddress = Storage.getString(StorageKeys.PRINTER_ADDRESS);
     const connected = await ensureConnected(selectedAddress);
@@ -352,7 +352,7 @@ export const printService = {
         const printedFallback = await printEscPos(fallbackText);
         if (printedFallback) return { success: true };
       } else {
-        const text = formatOrderText(order, shopName, currency);
+        const text = formatOrderText(order, shopName);
         const printed = await printEscPos(text);
         if (printed) return { success: true };
       }
