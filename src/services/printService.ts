@@ -1,8 +1,23 @@
 import { Order, OrderItem } from '../types';
 import { settingsService } from './settingsService';
 import { Storage, StorageKeys } from './storage';
-import { formatCurrency } from '../utils/formatters';
 import { Platform, PermissionsAndroid, NativeModules } from 'react-native';
+
+/** Use Rs instead of ₹ for thermal printers (MPT-II etc.) - they use legacy char sets and show ??? for Unicode */
+const formatMoneyForPrinter = (amount: number): string => `Rs ${amount.toFixed(2)}`;
+
+/** DD/MM/YYYY, HH:MM am/pm - thermal printer friendly, no locale quirks */
+const formatDateForPrinter = (timestamp: number): string => {
+  const d = new Date(timestamp);
+  const day = d.getDate();
+  const month = d.getMonth() + 1;
+  const year = d.getFullYear();
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 || 12;
+  return `${day}/${month}/${year}, ${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+};
 
 type PrintResult = {
   success: boolean;
@@ -46,13 +61,12 @@ const requestBluetoothPermissions = async (): Promise<boolean> => {
 };
 
 const line = '--------------------------------';
+const RECEIPT_WIDTH = 32;
 
-const formatMoney = (amount: number, currency: string): string => {
-  try {
-    return formatCurrency(amount, currency);
-  } catch {
-    return `₹${amount.toFixed(2)}`;
-  }
+/** Pad so right part aligns at RECEIPT_WIDTH (matches preview layout) */
+const pad = (left: string, right: string): string => {
+  const gap = Math.max(0, RECEIPT_WIDTH - left.length - right.length);
+  return left + ' '.repeat(gap) + right;
 };
 
 const padToken = (tokenNumber?: number) => {
@@ -62,7 +76,7 @@ const padToken = (tokenNumber?: number) => {
 
 const isComplimentOrder = (order: Order) => order.isCompliment === true || order.total === 0;
 
-const formatOrderText = (order: Order, shopName: string, currency: string): string => {
+const formatOrderText = (order: Order, shopName: string): string => {
   const lines: string[] = [];
   const compliment = isComplimentOrder(order);
 
@@ -75,25 +89,23 @@ const formatOrderText = (order: Order, shopName: string, currency: string): stri
   if (compliment) {
     lines.push(`Complimentary\n`);
   }
-  lines.push(`Date: ${new Date(order.timestamp).toLocaleString()}\n`);
+  lines.push(`Date: ${formatDateForPrinter(order.timestamp)}\n`);
   lines.push(`${line}\n`);
 
   order.items.forEach(item => {
     const itemLine = `${item.productName} x${item.quantity}`;
     const amount = compliment ? 0 : item.subtotal;
     const unitPrice = compliment ? 0 : item.unitPrice;
-    lines.push(`${itemLine}\n`);
-    lines.push(`  ${compliment ? 'Complimentary' : formatMoney(unitPrice, currency)} each`);
-    if (item.tax > 0 && !compliment) {
-      lines.push(` (+${item.tax}% tax)`);
-    }
-    lines.push(`  ${formatMoney(amount, currency)}\n`);
+    const eachText = compliment ? 'Complimentary' : formatMoneyForPrinter(unitPrice);
+    const taxSuffix = item.tax > 0 && !compliment ? ` (+${item.tax}% tax)` : '';
+    lines.push(pad(itemLine, formatMoneyForPrinter(amount)) + '\n');
+    lines.push(`  ${eachText} each${taxSuffix}\n`);
   });
 
   lines.push(`${line}\n`);
-  lines.push(`Subtotal: ${formatMoney(compliment ? 0 : order.subtotal, currency)}\n`);
-  lines.push(`Tax: ${formatMoney(compliment ? 0 : order.tax, currency)}\n`);
-  lines.push(`TOTAL: ${formatMoney(compliment ? 0 : order.total, currency)}\n`);
+  lines.push(pad('Subtotal:', formatMoneyForPrinter(compliment ? 0 : order.subtotal)) + '\n');
+  lines.push(pad('Tax:', formatMoneyForPrinter(compliment ? 0 : order.tax)) + '\n');
+  lines.push(pad('TOTAL:', formatMoneyForPrinter(compliment ? 0 : order.total)) + '\n');
   lines.push(`${line}\n`);
   lines.push(`Thank you!\n\n\n`);
 
